@@ -1,9 +1,36 @@
 .progress-section {
-  background: #e8e0d0;
-  border: 1px solid #1a1a1a;
-  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.25);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-bottom-color: rgba(255, 255, 255, 0.03);
+  border-radius: 24px;
   padding: 3rem;
   margin-bottom: 2rem;
+  backdrop-filter: blur(0.8px);
+  -webkit-backdrop-filter: blur(0.8px);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.20),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.08),
+    0 4px 24px rgba(0, 0, 0, 0.1);
+  position: relative;
+}
+
+.progress-section::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: linear-gradient(
+    45deg,
+    rgba(255,255,255,0.0) 0%,
+    rgba(255,255,255,0.04) 25%,
+    rgba(255,255,255,0.0) 50%,
+    rgba(255,255,255,0.04) 75%,
+    rgba(255,255,255,0.0) 100%
+  );
+  background-size: 100% 100%;
+  animation: refract-wave 3s ease-in-out infinite;
+  mix-blend-mode: lighten;
+  pointer-events: none;
 }
 
 .progress-header {
@@ -12,13 +39,13 @@
   align-items: center;
   margin-bottom: 2.5rem;
   padding-bottom: 1.5rem;
-  border-bottom: 1px solid #1a1a1a;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.1);
 }
 
 .progress-title {
   font-size: 1.5rem;
   font-weight: 700;
-  color: #1a1a1a;
+  color: #0a0a0a;
   text-transform: lowercase;
 }
 
@@ -32,7 +59,7 @@
 
 .status-badge {
   padding: 0.5rem 1.25rem;
-  background: #1a1a1a;
+  background: #0a0a0a;
   border-radius: 50px;
   font-size: 0.875rem;
   font-weight: 600;
@@ -70,31 +97,31 @@
 }
 
 .agent-feed::-webkit-scrollbar-track {
-  background: #d4c9b5;
+  background: rgba(0, 0, 0, 0.05);
   border-radius: 10px;
 }
 
 .agent-feed::-webkit-scrollbar-thumb {
-  background: #1a1a1a;
+  background: rgba(0, 0, 0, 0.2);
   border-radius: 10px;
 }
 
 .agent-message {
   padding: 1.25rem;
-  background: #f5f0e8;
-  border: 1px dashed #1a1a1a;
+  background: rgba(0, 0, 0, 0.03);
+  border: 1px solid rgba(0, 0, 0, 0.1);
   border-radius: 12px;
   transition: all 0.2s ease;
 }
 
 .agent-message:hover {
-  background: #fff;
+  background: rgba(0, 0, 0, 0.05);
 }
 
 .agent-name {
   font-weight: 700;
   font-size: 0.95rem;
-  color: #1a1a1a;
+  color: #0a0a0a;
   margin-bottom: 0.5rem;
   display: flex;
   align-items: center;
@@ -103,10 +130,9 @@
 }
 
 .agent-text {
-  color: #555555;
+  color: #333333;
   font-size: 0.95rem;
   line-height: 1.6;
-  text-transform: lowercase;
 }
 
 @media (max-width: 768px) {

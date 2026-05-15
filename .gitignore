@@ -60,3 +60,6 @@ dump.rdb
 *.tmp
 *.temp
 .cache/
+
+# Amazon Q
+.amazonq/
