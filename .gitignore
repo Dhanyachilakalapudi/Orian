@@ -63,3 +63,7 @@ dump.rdb
 
 # Amazon Q
 .amazonq/
+
+# Uploaded files
+server/uploads/
+uploads/
