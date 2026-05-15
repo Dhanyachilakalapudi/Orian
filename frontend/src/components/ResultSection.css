@@ -1,10 +1,18 @@
+.result-layout {
+  display: flex;
+  flex-direction: column;
+  height: calc(100vh - 8rem);
+  justify-content: center;
+  align-items: center;
+}
+
 .result-section {
+  width: 60%;
   background: rgba(255, 255, 255, 0.25);
   border: 1px solid rgba(255, 255, 255, 0.14);
   border-bottom-color: rgba(255, 255, 255, 0.03);
   border-radius: 24px;
-  padding: 3rem;
-  margin-bottom: 2rem;
+  padding: 2.5rem;
   backdrop-filter: blur(0.8px);
   -webkit-backdrop-filter: blur(0.8px);
   box-shadow:
@@ -12,6 +20,9 @@
     inset 0 -1px 0 rgba(0, 0, 0, 0.08),
     0 4px 24px rgba(0, 0, 0, 0.1);
   position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
 }
 
 .result-section::before {
@@ -27,7 +38,6 @@
     rgba(255,255,255,0.04) 75%,
     rgba(255,255,255,0.0) 100%
   );
-  background-size: 100% 100%;
   animation: refract-wave 3s ease-in-out infinite;
   mix-blend-mode: lighten;
   pointer-events: none;
@@ -37,88 +47,89 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 2.5rem;
   padding-bottom: 1.5rem;
-  border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+  border-bottom: 1px solid rgba(0, 0, 0, 0.08);
+}
+
+.result-header-left {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  color: #0a0a0a;
 }
 
 .result-title {
-  font-size: 1.5rem;
+  font-size: 1.25rem;
   font-weight: 700;
   color: #0a0a0a;
   text-transform: lowercase;
 }
 
 .result-codename {
-  font-size: 0.95rem;
+  font-size: 0.85rem;
   font-style: italic;
-  color: #555555;
-  margin-top: 0.25rem;
+  color: #888888;
   text-transform: lowercase;
+  margin-top: 0.15rem;
 }
 
 .download-btn {
-  padding: 0.75rem 1.5rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.6rem 1.25rem;
   background: #0a0a0a;
   border: none;
   border-radius: 50px;
   color: #fff;
-  font-size: 0.9rem;
+  font-size: 0.875rem;
   font-weight: 600;
   cursor: pointer;
   transition: all 0.2s ease;
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
   text-transform: lowercase;
-  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.2);
+  font-family: 'Instrument Serif', 'Playfair Display', Georgia, serif;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
 }
 
 .download-btn:hover {
   transform: translateY(-2px);
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.25);
 }
 
 .result-content {
   background: rgba(0, 0, 0, 0.03);
-  padding: 2rem;
+  padding: 1.5rem;
   border-radius: 12px;
-  border: 1px solid rgba(0, 0, 0, 0.1);
-  color: #0a0a0a;
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  color: #1a1a1a;
   line-height: 1.8;
   white-space: pre-wrap;
-  max-height: 500px;
+  max-height: 300px;
   overflow-y: auto;
-  margin-bottom: 2rem;
   font-size: 0.95rem;
 }
 
-.result-content::-webkit-scrollbar {
-  width: 6px;
-}
-
-.result-content::-webkit-scrollbar-track {
-  background: rgba(0, 0, 0, 0.05);
-  border-radius: 10px;
-}
-
-.result-content::-webkit-scrollbar-thumb {
-  background: rgba(0, 0, 0, 0.2);
-  border-radius: 10px;
-}
+.result-content::-webkit-scrollbar { width: 4px; }
+.result-content::-webkit-scrollbar-track { background: transparent; }
+.result-content::-webkit-scrollbar-thumb { background: rgba(0,0,0,0.15); border-radius: 10px; }
 
 .new-goal-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
   width: 100%;
-  padding: 1.25rem;
+  padding: 1rem;
   background: transparent;
-  border: 1px solid rgba(0, 0, 0, 0.2);
+  border: 1px solid rgba(0, 0, 0, 0.15);
   border-radius: 50px;
   color: #0a0a0a;
-  font-size: 1rem;
+  font-size: 0.95rem;
   font-weight: 600;
   cursor: pointer;
   transition: all 0.2s ease;
   text-transform: lowercase;
+  font-family: 'Instrument Serif', 'Playfair Display', Georgia, serif;
 }
 
 .new-goal-btn:hover {
@@ -126,20 +137,21 @@
   color: #fff;
   border-color: #0a0a0a;
   transform: translateY(-2px);
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.2);
 }
 
 @media (max-width: 768px) {
+  .result-section {
+    width: 100%;
+    padding: 1.5rem;
+  }
+
   .result-header {
     flex-direction: column;
-    gap: 1rem;
     align-items: flex-start;
+    gap: 1rem;
   }
-  
-  .result-section {
-    padding: 2rem;
-  }
-  
+
   .download-btn {
     width: 100%;
     justify-content: center;

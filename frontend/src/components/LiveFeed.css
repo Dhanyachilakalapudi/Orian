@@ -1,0 +1,140 @@
+.livefeed {
+  background: rgba(255, 255, 255, 0.25);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-bottom-color: rgba(255, 255, 255, 0.03);
+  border-radius: 24px;
+  padding: 2.5rem;
+  backdrop-filter: blur(0.8px);
+  -webkit-backdrop-filter: blur(0.8px);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.20),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.08),
+    0 4px 24px rgba(0, 0, 0, 0.1);
+  display: flex;
+  flex-direction: column;
+  height: calc(100vh - 8rem);
+}
+
+.livefeed-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 2rem;
+  padding-bottom: 1.5rem;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.08);
+}
+
+.livefeed-title {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: #0a0a0a;
+  text-transform: lowercase;
+}
+
+.livefeed-codename {
+  font-size: 0.9rem;
+  font-style: italic;
+  color: #555555;
+  text-transform: lowercase;
+  margin-top: 0.25rem;
+}
+
+.livefeed-badge {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 1.25rem;
+  background: #0a0a0a;
+  border-radius: 50px;
+  color: #fff;
+  font-size: 0.875rem;
+  font-weight: 600;
+  text-transform: lowercase;
+}
+
+.livefeed-dot {
+  width: 8px;
+  height: 8px;
+  background: #fff;
+  border-radius: 50%;
+  animation: blink 1.5s ease-in-out infinite;
+}
+
+@keyframes blink {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.3; }
+}
+
+.livefeed-messages {
+  flex: 1;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  padding-right: 0.5rem;
+}
+
+.livefeed-messages::-webkit-scrollbar {
+  width: 6px;
+}
+
+.livefeed-messages::-webkit-scrollbar-track {
+  background: rgba(0,0,0,0.05);
+  border-radius: 10px;
+}
+
+.livefeed-messages::-webkit-scrollbar-thumb {
+  background: rgba(0,0,0,0.2);
+  border-radius: 10px;
+}
+
+.livefeed-message {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  padding: 1.25rem;
+  background: rgba(0,0,0,0.03);
+  border: 1px solid rgba(0,0,0,0.08);
+  border-radius: 12px;
+  animation: fadeIn 0.3s ease;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.livefeed-icon {
+  display: flex;
+  align-items: center;
+  opacity: 0.6;
+}
+
+.livefeed-text {
+  font-size: 0.95rem;
+  color: #333333;
+  line-height: 1.6;
+}
+
+@media (max-width: 768px) {
+  .livefeed {
+    padding: 1.5rem;
+    height: calc(100vh - 6rem);
+  }
+
+  .livefeed-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 1rem;
+  }
+}
+
+.livefeed-agent {
+  font-weight: 700;
+  font-size: 0.9rem;
+  color: #0a0a0a;
+  text-transform: lowercase;
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}

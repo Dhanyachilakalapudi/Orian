@@ -1,21 +1,19 @@
-.chat-layout {
+.goalform-layout {
   display: flex;
   flex-direction: column;
   height: calc(100vh - 8rem);
-  position: relative;
 }
 
-.chat-body {
+.goalform-body {
   flex: 1;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
   text-align: center;
-  padding: 2rem;
 }
 
-.chat-title {
+.goalform-title {
   font-size: 2rem;
   font-weight: 700;
   color: #0a0a0a;
@@ -24,17 +22,24 @@
   text-shadow: 1px 1px 2px rgba(255,255,255,0.5);
 }
 
-.chat-codename {
+.goalform-codename {
   font-size: 0.95rem;
   font-style: italic;
   color: #555555;
   text-transform: lowercase;
 }
 
-.chat-input-bar {
+.goalform-bar-wrapper {
+  display: flex;
+  justify-content: center;
+  padding-bottom: 1rem;
+}
+
+.goalform-bar {
   display: flex;
   align-items: flex-end;
   gap: 0.75rem;
+  width: 50%;
   background: rgba(255, 255, 255, 0.25);
   border: 1px solid rgba(255, 255, 255, 0.14);
   border-bottom-color: rgba(255, 255, 255, 0.03);
@@ -46,11 +51,9 @@
     inset 0 1px 0 rgba(255, 255, 255, 0.20),
     inset 0 -1px 0 rgba(0, 0, 0, 0.08),
     0 4px 24px rgba(0, 0, 0, 0.1);
-  width: 50%;
-  margin: 0 auto;
 }
 
-.chat-input-bar textarea {
+.goalform-bar textarea {
   flex: 1;
   background: transparent;
   border: none;
@@ -64,11 +67,11 @@
   overflow-y: auto;
 }
 
-.chat-input-bar textarea::placeholder {
+.goalform-bar textarea::placeholder {
   color: #999999;
 }
 
-.send-btn {
+.goalform-send-btn {
   width: 42px;
   height: 42px;
   border-radius: 50%;
@@ -85,23 +88,27 @@
   box-shadow: 0 2px 8px rgba(0,0,0,0.2);
 }
 
-.send-btn:hover:not(:disabled) {
+.goalform-send-btn:hover:not(:disabled) {
   transform: scale(1.08);
   box-shadow: 0 4px 16px rgba(0,0,0,0.3);
 }
 
-.send-btn:disabled {
+.goalform-send-btn:disabled {
   opacity: 0.35;
   cursor: not-allowed;
   transform: none;
 }
 
 @media (max-width: 768px) {
-  .chat-layout {
+  .goalform-layout {
     height: calc(100vh - 6rem);
   }
 
-  .chat-title {
+  .goalform-title {
     font-size: 1.5rem;
+  }
+
+  .goalform-bar {
+    width: 100%;
   }
 }
