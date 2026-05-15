@@ -23,25 +23,33 @@ const XIcon = () => (
 
 const statusIcon = { completed: <CheckIcon />, processing: <ClockIcon />, failed: <XIcon /> };
 
-function TaskHistory({ tasks, onSelect }) {
-  if (!tasks || tasks.length === 0) return null;
-
+function TaskHistory({ tasks, onSelect, onNewGoal }) {
   return (
     <div className="taskhistory">
-      <h3 className="taskhistory-heading">recent tasks</h3>
-      <ul className="taskhistory-list">
-        {tasks.map((task) => (
-          <li key={task.id} className="taskhistory-item" onClick={() => onSelect?.(task)}>
-            <span className={`taskhistory-status ${task.status}`}>
-              {statusIcon[task.status]}
-            </span>
-            <div className="taskhistory-info">
-              <p className="taskhistory-goal">{task.goal}</p>
-              <p className="taskhistory-time">{task.time}</p>
-            </div>
-          </li>
-        ))}
-      </ul>
+      {tasks && tasks.length > 0 && (
+        <>
+          <h3 className="taskhistory-heading">recent tasks</h3>
+          <ul className="taskhistory-list">
+            {tasks.map((task) => (
+              <li key={task.id} className="taskhistory-item" onClick={() => onSelect?.(task)}>
+                <span className={`taskhistory-status ${task.status}`}>
+                  {statusIcon[task.status]}
+                </span>
+                <div className="taskhistory-info">
+                  <p className="taskhistory-goal">{task.goal}</p>
+                  <p className="taskhistory-time">{task.time}</p>
+                </div>
+              </li>
+            ))}
+          </ul>
+        </>
+      )}
+      <button className="taskhistory-new-btn" onClick={onNewGoal}>
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
+          <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
+        </svg>
+        new goal
+      </button>
     </div>
   );
 }

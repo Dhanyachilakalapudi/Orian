@@ -1,11 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import './App.css';
+import Lenis from 'lenis';
 import GoalForm from './components/GoalForm';
 import LiveFeed from './components/LiveFeed';
 import ResultSection from './components/ResultSection';
 import Loader from './components/Loader';
 import TaskHistory from './components/TaskHistory';
 import DotsBackground from './components/DotsBackground';
+import Toast from './components/Toast';
 
 const LogoIcon = () => (
   <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#0a0a0a" strokeWidth="1.5" strokeLinecap="round">
@@ -24,6 +26,21 @@ function App() {
   const [loaderStep, setLoaderStep] = useState(0);
   const [tasks, setTasks] = useState([]);
   const [drawerOpen, setDrawerOpen] = useState(false);
+  const [toast, setToast] = useState(null);
+
+  useEffect(() => {
+    if (showApp) return;
+    const lenis = new Lenis({ duration: 1.2, easing: t => Math.min(1, 1.001 - Math.pow(2, -10 * t)) });
+    function raf(time) { lenis.raf(time); requestAnimationFrame(raf); }
+    requestAnimationFrame(raf);
+    const observer = new IntersectionObserver((entries) => {
+      entries.forEach(e => {
+        if (e.isIntersecting) { e.target.classList.add('visible'); observer.unobserve(e.target); }
+      });
+    }, { threshold: 0.1 });
+    document.querySelectorAll('.animate-on-scroll').forEach(el => observer.observe(el));
+    return () => { lenis.destroy(); observer.disconnect(); };
+  }, [showApp]);
 
   useEffect(() => {
     const handle = document.getElementById('resize-handle');
@@ -96,13 +113,22 @@ function App() {
         setAgentMessages(prev => [...prev, step]);
         if (i === steps.length - 1) {
           setTasks(prev => prev.map(t => t.id === newTask.id ? { ...t, status: 'completed' } : t));
+          setToast('task completed successfully!');
           setTimeout(() => {
             setFinalResult('demo result: your multi-agent system has successfully processed the goal. in production, this would connect to groq llm, tavily search api, and execute real agent workflows.');
+            setTasks(prev => prev.map(t => t.id === newTask.id ? { ...t, result: 'demo result: your multi-agent system has successfully processed the goal. in production, this would connect to groq llm, tavily search api, and execute real agent workflows.' } : t));
             setView('result');
           }, 800);
         }
       }, i * 900);
     });
+  };
+
+  const handleSelectTask = (task) => {
+    if (task.result) {
+      setFinalResult(task.result);
+      setView('result');
+    }
   };
 
   const handleNewGoal = () => {
@@ -122,7 +148,7 @@ function App() {
               <LogoIcon />
               <h1>orian</h1>
             </div>
-            <TaskHistory tasks={tasks} />
+            <TaskHistory tasks={tasks} onSelect={handleSelectTask} onNewGoal={handleNewGoal} />
           </aside>
           <div className="resize-handle" id="resize-handle">
             <div className="resize-dots">
@@ -148,15 +174,15 @@ function App() {
                 </div>
                 <button className="drawer-close" onClick={() => setDrawerOpen(false)}>
                   <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
-                    <line x1="18" y1="6" x2="6" y2="18"/>
-                    <line x1="6" y1="6" x2="18" y2="18"/>
+                    <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
                   </svg>
                 </button>
               </div>
-              <TaskHistory tasks={tasks} />
+              <TaskHistory tasks={tasks} onSelect={handleSelectTask} onNewGoal={handleNewGoal} />
             </div>
           </div>
         )}
+        {toast && <Toast message={toast} onClose={() => setToast(null)} />}
       </div>
     );
   }
@@ -182,8 +208,8 @@ function App() {
           </button>
         </div>
 
-        <section className="hero">
-          <h1 className="hero-title">goal-driven multi-agent ai platform</h1>
+        <section className="hero animate-on-scroll">
+          <h1 className="hero-title">multi-agent autonomy that ships real work, end-to-end.</h1>
           <p className="hero-subtitle">just tell us what you want. we'll make it happen.</p>
           <p className="hero-codename">/ codename: cortex /</p>
           <button className="hero-cta" onClick={handleGetStarted}>
@@ -191,7 +217,7 @@ function App() {
           </button>
         </section>
 
-        <section className="features" id="features">
+        <section className="features animate-on-scroll" id="features">
           <div className="features-grid">
             <div className="feature-card">
               <div className="feature-number">1.</div>
@@ -232,7 +258,7 @@ function App() {
           </div>
         </section>
 
-        <section className="about" id="about">
+        <section className="about animate-on-scroll" id="about">
           <div className="about-grid">
             <div className="about-left">
               <h2 className="section-title">about orian</h2>
@@ -263,7 +289,7 @@ function App() {
           </div>
         </section>
 
-        <section className="docs" id="docs">
+        <section className="docs animate-on-scroll" id="docs">
           <h2 className="section-title">documentation</h2>
           <p className="section-text" style={{ marginBottom: '3rem' }}>everything you need to build with orian.</p>
           <div className="docs-grid">
@@ -306,7 +332,7 @@ function App() {
           </div>
         </section>
 
-        <footer className="footer">
+        <footer className="footer animate-on-scroll">
           <h3 className="footer-heading">join the autonomous revolution</h3>
           <p className="footer-text">powered by groq, tavily & multi-agent intelligence</p>
           <button className="footer-cta" onClick={handleGetStarted}>

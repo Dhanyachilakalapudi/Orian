@@ -1,8 +1,20 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import './GoalForm.css';
 
 function GoalForm({ onSubmit }) {
   const [goal, setGoal] = useState('');
+  const textareaRef = useRef(null);
+
+  useEffect(() => {
+    const onKeyDown = (e) => {
+      if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
+        e.preventDefault();
+        textareaRef.current?.focus();
+      }
+    };
+    window.addEventListener('keydown', onKeyDown);
+    return () => window.removeEventListener('keydown', onKeyDown);
+  }, []);
 
   const handleSubmit = () => {
     if (!goal.trim()) return;
@@ -25,6 +37,7 @@ function GoalForm({ onSubmit }) {
       <div className="goalform-bar-wrapper">
         <div className="goalform-bar">
           <textarea
+            ref={textareaRef}
             value={goal}
             onChange={(e) => setGoal(e.target.value)}
             onKeyDown={handleKeyDown}
