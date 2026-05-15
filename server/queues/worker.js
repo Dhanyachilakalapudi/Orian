@@ -41,10 +41,10 @@ async function startWorker(socketIoInstance) {
       },
       {
         connection,
-        concurrency: 1, // Process one goal at a time
+        concurrency: 1,
         settings: {
-          lockDuration: 30000, // 30 seconds
-          lockRenewTime: 15000, // Renew every 15 seconds
+          lockDuration: 300000,
+          lockRenewTime: 60000,
         },
       }
     );
@@ -114,7 +114,6 @@ async function processJob(job, io) {
       console.error(`[WORKER] Failed to persist error for ${goalId}: ${dbError.message}`);
     }
 
-    // Report progress update on error
     if (io) {
       io.to(`goal:${goalId}`).emit('task_error', {
         goalId,
@@ -123,7 +122,6 @@ async function processJob(job, io) {
       });
     }
 
-    // Re-throw to let BullMQ mark job as failed
     throw error;
   }
 }

@@ -13,6 +13,7 @@ const { runSummarizer } = require('../agents/summarizer');
 const { runDeliveryAgent } = require('../agents/deliveryAgent');
 const { updateGoalStatus, addTaskLog } = require('../db/sqlite');
 const { emitTaskUpdate, emitTaskComplete, emitError } = require('../sockets/socket');
+const { startTrace, startSpan, endSpan, endTrace } = require('./tracer');
 
 /**
  * Execute the complete autonomous workflow for a goal
@@ -23,6 +24,7 @@ const { emitTaskUpdate, emitTaskComplete, emitError } = require('../sockets/sock
  */
 async function executeGoal(goalId, goalData, io) {
   const startTime = Date.now();
+  let traceId, rootSpan;
 
   try {
     console.log(`\n========== EXECUTING GOAL: ${goalId} ==========`);
@@ -30,6 +32,9 @@ async function executeGoal(goalId, goalData, io) {
 
     await updateGoalStatus(goalId, 'running');
     emitTaskUpdate(io, goalId, { stage: 'initialization', message: 'Starting...', progress: 0 });
+
+    traceId = startTrace(goalId);
+    rootSpan = startSpan(traceId, 'workflow.execute', null, { goal: goalData.goal, goalId });
 
     const { callGroqJson } = require('./groq');
     let intentCheck = null;
@@ -67,7 +72,9 @@ Respond ONLY with JSON: { "type": "chat" | "task", "reply": "short friendly repl
       progress: 10,
     });
 
+    const planSpan = startSpan(traceId, 'agent.planner', rootSpan.spanId, { goal: goalData.goal });
     const plan = await runPlanner(goalId, goalData.goal, goalData.description, io, goalData.userId);
+    endSpan(planSpan, 'ok', { subtaskCount: plan.subtasks.length });
 
     console.log(`✓ Plan created with ${plan.subtasks.length} subtasks`);
     console.log(`✓ Estimated time: ${plan.total_estimated_time_minutes} minutes`);
@@ -150,7 +157,9 @@ Respond ONLY with JSON: { "type": "chat" | "task", "reply": "short friendly repl
             currentTask: taskId,
           });
 
+          const taskSpan = startSpan(traceId, `agent.${routing.assignedAgent}`, rootSpan.spanId, { task: task.task, taskId });
           const result = await executeTask(goalId, task, routing, io, goalData.userId);
+          endSpan(taskSpan, 'ok', { agent: routing.assignedAgent });
           completedTasks++;
           batchResults.push({ taskId, task: task.task, agent: routing.assignedAgent, result });
 
@@ -332,6 +341,9 @@ Respond ONLY with JSON: { "type": "chat" | "task", "reply": "short friendly repl
 
     emitTaskComplete(io, goalId, finalResult);
 
+    endSpan(rootSpan, 'ok', { duration: finalResult.duration, quality: finalResult.quality?.score });
+    endTrace(traceId);
+
     if (goalData.userId) {
       await runDeliveryAgent(goalId, reportContent, goalData.goal, goalData.userId);
     }
@@ -351,9 +363,12 @@ Respond ONLY with JSON: { "type": "chat" | "task", "reply": "short friendly repl
     await addTaskLog(goalId, 'execution_error', `Goal failed: ${error.message}`);
 
     // Emit error
-    emitError(io, goalId, error.message, {
-      stack: error.stack,
-    });
+    emitError(io, goalId, error.message, { stack: error.stack });
+
+    if (traceId && rootSpan) {
+      endSpan(rootSpan, 'error', { error: error.message });
+      endTrace(traceId);
+    }
 
     throw error;
   }

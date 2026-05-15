@@ -11,6 +11,8 @@ import DotsBackground from './components/DotsBackground';
 import Toast from './components/Toast';
 import Integrations from './components/Integrations';
 import AuthModal from './components/AuthModal';
+import PrivacyPolicy from './components/PrivacyPolicy';
+import TermsOfService from './components/TermsOfService';
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL || 'http://localhost:3000';
 
@@ -25,6 +27,7 @@ const LogoIcon = () => (
 
 function App() {
   const [showApp, setShowApp] = useState(false);
+  const [legalPage, setLegalPage] = useState(null);
   const [view, setView] = useState('input');
   const [agentMessages, setAgentMessages] = useState([]);
   const [finalResult, setFinalResult] = useState('');
@@ -76,7 +79,7 @@ function App() {
     socket.on('task_complete', (data) => {
       if (data.goalId !== activeTaskRef.current) return;
       const r = data.result || {};
-      const report = r.report?.content || r.summary?.main || JSON.stringify(r, null, 2);
+      const report = r.report?.content || r.summary?.main || '';
       const artifacts = r.artifacts || { code: [], files: [] };
       setTasks(prev => prev.map(t => t.id === activeTaskRef.current ? { ...t, status: 'completed', result: report, artifacts } : t));
       setToast('task completed successfully!');
@@ -173,10 +176,23 @@ function App() {
     return () => window.removeEventListener('scroll', onScroll);
   }, [showApp]);
 
+  if (legalPage === 'privacy') return <PrivacyPolicy onBack={() => setLegalPage(null)} />;
+  if (legalPage === 'terms') return <TermsOfService onBack={() => setLegalPage(null)} />;
+
   const handleGetStarted = () => setShowApp(true);
 
   const handleAuth = (u, t) => { setUser(u); setToken(t); setShowApp(true); };
-  const handleLogout = () => { localStorage.removeItem('orian_token'); localStorage.removeItem('orian_user'); setToken(null); setUser(null); };
+  const handleLogout = () => {
+    localStorage.removeItem('orian_token');
+    localStorage.removeItem('orian_user');
+    setToken(null);
+    setUser(null);
+    setShowApp(false);
+    setView('input');
+    setTasks([]);
+    setAgentMessages([]);
+    setFinalResult('');
+  };
 
   const handleSubmitGoal = async (goal) => {
     const newTask = { id: null, goal, status: 'processing', time: new Date().toLocaleTimeString() };
@@ -191,6 +207,11 @@ function App() {
         body: JSON.stringify({ goal }),
       });
       const data = await res.json();
+      if (res.status === 401) {
+        handleLogout();
+        setToast('session expired. please sign in again.');
+        return;
+      }
       if (!res.ok) throw new Error(data.error || 'failed to submit goal');
 
       newTask.id = data.goalId;
@@ -211,16 +232,15 @@ function App() {
   const handleStopGoal = async () => {
     const goalId = activeTaskRef.current;
     if (!goalId) return;
+    setTasks(prev => prev.map(t => t.id === goalId ? { ...t, status: 'cancelled' } : t));
+    setToast('task stopped.');
+    setView('input');
     try {
       await fetch(`${BACKEND_URL}/api/goal/${goalId}/cancel`, {
         method: 'POST',
         headers: { 'Authorization': `Bearer ${token}` },
       });
-    } catch (_) {
-      setTasks(prev => prev.map(t => t.id === goalId ? { ...t, status: 'cancelled' } : t));
-      setToast('task stopped.');
-      setView('input');
-    }
+    } catch (_) {}
   };
 
   const handleSelectTask = (task) => {
@@ -475,6 +495,11 @@ function App() {
             try it now <span>↗</span>
           </button>
           <p className="footer-links">built with react · socket.io · bullmq</p>
+          <p className="footer-links" style={{ marginTop: '0.75rem' }}>
+            <button onClick={() => setLegalPage('privacy')} style={{ background: 'none', border: 'none', color: '#999', fontSize: '0.9rem', cursor: 'pointer', fontFamily: 'inherit', textTransform: 'lowercase', textDecoration: 'underline', textUnderlineOffset: '3px' }}>privacy policy</button>
+            {' · '}
+            <button onClick={() => setLegalPage('terms')} style={{ background: 'none', border: 'none', color: '#999', fontSize: '0.9rem', cursor: 'pointer', fontFamily: 'inherit', textTransform: 'lowercase', textDecoration: 'underline', textUnderlineOffset: '3px' }}>terms of service</button>
+          </p>
         </footer>
       </div>
     </div>

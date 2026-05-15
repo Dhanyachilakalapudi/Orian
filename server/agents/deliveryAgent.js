@@ -130,15 +130,15 @@ async function deliverViaSlack(workflowId, report, goal) {
     return { delivered: true, method: 'webhook', status: res.status };
   }
 
-  if (integration.accessToken) {
-    const channel = meta.channelId || meta.channel || '#general';
-    const payload = JSON.stringify({ channel, text: goal.substring(0, 150), blocks });
+  if (integration.accessToken && meta.channelId) {
+    const payload = JSON.stringify({ channel: meta.channelId, text: goal.substring(0, 150), blocks });
     const res = await httpsPost('slack.com', '/api/chat.postMessage', { 'Authorization': `Bearer ${integration.accessToken}`, 'Content-Type': 'application/json' }, payload);
     const data = JSON.parse(res.data);
+    if (!data.ok) return { skipped: true, reason: `slack api error: ${data.error}` };
     return { delivered: true, method: 'api', channel: data.channel, ts: data.ts };
   }
 
-  return { skipped: true, reason: 'no slack webhook or token' };
+  return { skipped: true, reason: 'no slack webhook url and no channelId configured' };
 }
 
 function markdownToDocRequests(markdown) {

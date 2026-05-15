@@ -1,5 +1,5 @@
 // ============================================
-// AutoPilot - Main Server Entry Point
+// ORIAN - Main Server Entry Point
 // ============================================
 // Purpose: Initialize Express, Socket.io, Redis, SQLite
 // and orchestrate the entire autonomous agent system
@@ -153,7 +153,7 @@ app.use((err, req, res, next) => {
  */
 async function initializeSystem() {
   try {
-    console.log('\n========== AUTOPILOT INITIALIZATION ==========\n');
+    console.log('\n========== ORIAN INITIALIZATION ==========\n');
     console.log('[BOOT] Queue reliability patch loaded');
 
     // 1. Initialize SQLite database
@@ -172,11 +172,11 @@ async function initializeSystem() {
 
     // 3. Verify environment variables
     console.log('[ENV] Validating environment variables...');
-    const requiredVars = ['GROQ_API_KEY', 'TAVILY_API_KEY'];
+    const requiredVars = ['GROQ_API_KEY', 'TAVILY_API_KEY', 'JWT_SECRET'];
     const missingVars = requiredVars.filter((v) => !process.env[v]);
-
-    if (missingVars.length > 0) {
-      throw new Error(`Missing environment variables: ${missingVars.join(', ')}`);
+    if (missingVars.length > 0) throw new Error(`Missing environment variables: ${missingVars.join(', ')}`);
+    if (process.env.JWT_SECRET === 'change-this-to-a-long-random-secret') {
+      throw new Error('JWT_SECRET is still set to the default insecure value. Set a strong secret in .env');
     }
     console.log('[ENV] ✓ All required environment variables present');
 
@@ -226,12 +226,12 @@ async function requeuePendingGoals() {
   console.log(`[QUEUE] Reconciling ${queuedGoals.length} queued SQLite goal(s)...`);
 
   for (const queuedGoal of queuedGoals) {
+    if (queuedGoal.status === 'cancelled') continue;
     const existingJob = await getJobStatus(queuedGoal.id);
     if (existingJob) {
       console.log(`[QUEUE] Goal ${queuedGoal.id} already has Redis job ${existingJob.jobId}`);
       continue;
     }
-
     await addTaskToQueue(queuedGoal.id, {
       goal: queuedGoal.goal,
       description: queuedGoal.description || '',
@@ -257,7 +257,7 @@ async function startServer() {
 
     // Start listening
     server.listen(PORT, () => {
-      console.log(`\n✓ AutoPilot Server running on http://localhost:${PORT}`);
+      console.log(`\n✓ ORIAN Server running on http://localhost:${PORT}`);
       console.log(`✓ Socket.io connected at ws://localhost:${PORT}`);
       console.log(`✓ Health check: http://localhost:${PORT}/health`);
       console.log(`✓ Worker stats: http://localhost:${PORT}/api/stats/worker`);
