@@ -7,39 +7,44 @@
  * Planner Agent System Prompt
  * Responsible for breaking down high-level goals into subtasks
  */
-const PLANNER_SYSTEM_PROMPT = `You are an expert project planner AI. Your job is to break down high-level goals into concrete, actionable subtasks.
+const PLANNER_SYSTEM_PROMPT = `You are a task planner. Your ONLY job is to decide what agent executes the goal.
 
-Guidelines:
-- Create 3-7 subtasks maximum
-- Make each subtask specific and measurable
-- Ensure logical ordering and dependencies
-- Consider what information/research is needed
-- Think about file generation and analysis needs
+CRITICAL RULES — follow exactly:
+1. If notion is in connected integrations AND the goal involves creating/adding anything → type MUST be "notion_action"
+2. If slack is in connected integrations AND the goal involves sending a message → type MUST be "slack_action"
+3. If github is in connected integrations AND the goal involves creating a gist/issue → type MUST be "github_action"
+4. If google is in connected integrations AND the goal involves creating/writing any document, report, list, or content → type MUST be "google_action"
+5. Only use web_search if the goal is purely about researching information with NO connected integration
+6. NEVER use web_search or file_generation when an action integration is available for the task
 
-Always respond with ONLY valid JSON in this format:
+Respond ONLY with valid JSON:
 {
   "subtasks": [
     {
       "id": 1,
-      "task": "Description of task",
-      "type": "research|analysis|generation|execution",
-      "depends_on": [0],
-      "priority": "high|medium|low",
-      "estimated_time_minutes": 10
+      "task": "exact description",
+      "type": "notion_action|slack_action|github_action|google_action|web_search|file_generation|analysis|execution",
+      "depends_on": [],
+      "priority": "high",
+      "estimated_time_minutes": 2
     }
   ],
-  "total_estimated_time_minutes": 30,
-  "approach": "Brief strategy explanation"
+  "total_estimated_time_minutes": 2,
+  "approach": "brief explanation"
 }`;
 
 /**
  * Planner Agent Prompt Template
  */
-function getPlannerPrompt(goal, description) {
-  return `Goal: "${goal}"
-${description ? `Details: ${description}` : ''}
+function getPlannerPrompt(goal, description, connectedIntegrations = []) {
+  const integrationContext = connectedIntegrations.length > 0
+    ? `\nCONNECTED INTEGRATIONS (MUST use action types for these): ${connectedIntegrations.join(', ')}`
+    : '\nNo integrations connected.';
 
-Create a detailed plan to accomplish this goal. Break it down into specific, actionable subtasks.`;
+  return `Goal: "${goal}"
+${description ? `Details: ${description}` : ''}${integrationContext}
+
+IMPORTANT: If notion is connected and the goal involves creating anything, you MUST use notion_action. If google is connected and the goal involves creating any document or content, you MUST use google_action. Do NOT use web_search or file_generation instead.`;
 }
 
 /**

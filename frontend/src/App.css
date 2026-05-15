@@ -16,7 +16,7 @@ body {
   min-height: 100vh;
   overflow-x: hidden;
   position: relative;
-  cursor: url('https://img.icons8.com/carbon-copy/32/select-cursor.png'), auto;
+  cursor: default;
 }
 
 ::selection {
@@ -725,19 +725,34 @@ body::after {
 }
 
 .sidebar {
-  width: 240px;
+  width: 280px;
   flex-shrink: 0;
-  padding: 2rem 1.5rem;
+  padding: 2rem 1.75rem 1.5rem;
   border-right: 1px solid rgba(0, 0, 0, 0.1);
   background: rgba(255, 255, 255, 0.15);
   backdrop-filter: blur(8px);
   -webkit-backdrop-filter: blur(8px);
   display: flex;
   flex-direction: column;
-  gap: 2rem;
   height: 100vh;
   transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1), padding 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   overflow: hidden;
+}
+
+.sidebar-top {
+  flex: 1;
+  overflow-y: auto;
+  overflow-x: hidden;
+  min-height: 0;
+  padding-bottom: 0.75rem;
+}
+
+.sidebar-bottom {
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  padding-top: 0.75rem;
 }
 
 .sidebar.collapsed {
@@ -780,11 +795,11 @@ body::after {
 .sidebar-logo {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 12px;
 }
 
 .sidebar-logo h1 {
-  font-size: 1.25rem;
+  font-size: 1.5rem;
   font-weight: 700;
   color: #0a0a0a;
   text-transform: lowercase;
@@ -795,6 +810,7 @@ body::after {
   flex: 1;
   padding: 2rem 3rem;
   overflow-y: auto;
+  min-width: 0;
 }
 
 @media (max-width: 768px) {
@@ -1093,4 +1109,41 @@ body::after {
 .animate-on-scroll.visible {
   opacity: 1;
   transform: translateY(0);
+}
+
+.sidebar-user {
+  padding-top: 0.75rem;
+  padding-bottom: 0.5rem;
+  border-top: 1px solid rgba(0, 0, 0, 0.08);
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.sidebar-user-email {
+  font-size: 0.75rem;
+  color: #888;
+  text-overflow: ellipsis;
+  overflow: hidden;
+  white-space: nowrap;
+}
+
+.sidebar-logout-btn {
+  background: none;
+  border: 1px solid rgba(0, 0, 0, 0.12);
+  border-radius: 8px;
+  padding: 0.3rem 0.6rem;
+  font-size: 0.75rem;
+  font-family: inherit;
+  color: #555;
+  cursor: pointer;
+  text-transform: lowercase;
+  transition: all 0.15s ease;
+  text-align: left;
+}
+
+.sidebar-logout-btn:hover {
+  background: rgba(220, 50, 50, 0.07);
+  color: #c0392b;
+  border-color: rgba(220, 50, 50, 0.2);
 }

@@ -1,0 +1,152 @@
+.integrations {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  padding-top: 1rem;
+  border-top: 1px solid rgba(0, 0, 0, 0.08);
+}
+
+.integrations-label {
+  font-size: 0.7rem;
+  font-weight: 600;
+  color: #999;
+  text-transform: lowercase;
+  letter-spacing: 0.08em;
+  padding: 0 0.25rem;
+}
+
+.integrations-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.integration-item {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.integration-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.4rem 0.5rem;
+  border-radius: 10px;
+  transition: background 0.15s ease;
+}
+
+.integration-row:hover {
+  background: rgba(0, 0, 0, 0.04);
+}
+
+.integration-icon {
+  width: 18px;
+  height: 18px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  color: #555;
+}
+
+.integration-name {
+  flex: 1;
+  font-size: 0.8rem;
+  color: #333;
+  text-transform: lowercase;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.integration-btn {
+  font-size: 0.7rem;
+  padding: 0.2rem 0.6rem;
+  border-radius: 50px;
+  border: 1px solid rgba(0, 0, 0, 0.15);
+  background: transparent;
+  color: #555;
+  cursor: pointer;
+  font-family: inherit;
+  text-transform: lowercase;
+  transition: all 0.15s ease;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.integration-btn:hover {
+  background: #0a0a0a;
+  color: #fff;
+  border-color: #0a0a0a;
+}
+
+.integration-btn.connected {
+  border-color: rgba(0, 0, 0, 0.1);
+  color: #888;
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+}
+
+.integration-btn.connected:hover {
+  background: rgba(220, 50, 50, 0.08);
+  color: #c0392b;
+  border-color: rgba(220, 50, 50, 0.2);
+}
+
+.integration-dot {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: #27ae60;
+  flex-shrink: 0;
+}
+
+.integration-form {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  padding: 0.5rem 0.5rem 0.5rem 2rem;
+}
+
+.integration-form input {
+  width: 100%;
+  padding: 0.4rem 0.6rem;
+  border: 1px solid rgba(0, 0, 0, 0.1);
+  border-radius: 8px;
+  font-size: 0.75rem;
+  font-family: inherit;
+  background: rgba(255, 255, 255, 0.12);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+  color: #0a0a0a;
+  outline: none;
+  transition: border-color 0.15s ease, background 0.15s ease;
+}
+
+.integration-form input:focus {
+  border-color: rgba(0, 0, 0, 0.3);
+}
+
+.integration-form input::placeholder {
+  color: #aaa;
+}
+
+.integration-save-btn {
+  align-self: flex-start;
+  padding: 0.3rem 0.8rem;
+  background: #0a0a0a;
+  color: #fff;
+  border: none;
+  border-radius: 50px;
+  font-size: 0.75rem;
+  font-family: inherit;
+  text-transform: lowercase;
+  cursor: pointer;
+  transition: opacity 0.15s ease;
+}
+
+.integration-save-btn:hover {
+  opacity: 0.8;
+}

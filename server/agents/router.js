@@ -9,7 +9,7 @@ const { addTaskLog } = require('../db/sqlite');
 const { emitAgentActivity } = require('../sockets/socket');
 
 // Valid agent types
-const VALID_AGENTS = ['web_search', 'file_generation', 'code_execution', 'analysis'];
+const VALID_AGENTS = ['web_search', 'file_generation', 'code_execution', 'analysis', 'notion_action', 'slack_action', 'github_action', 'google_action'];
 
 /**
  * Route a task to the appropriate specialist agent
@@ -18,11 +18,23 @@ const VALID_AGENTS = ['web_search', 'file_generation', 'code_execution', 'analys
  * @param {Object} io - Socket.io instance
  * @returns {Promise<Object>} - Routing decision with agent assignment
  */
+const ACTION_AGENTS = ['notion_action', 'slack_action', 'github_action', 'google_action'];
+
 async function routeTask(goalId, task, io = null) {
   try {
-    console.log(`[ROUTER] Routing task: "${task.task}"`);
+    if (ACTION_AGENTS.includes(task.type)) {
+      return {
+        taskId: task.id,
+        taskDescription: task.task,
+        assignedAgent: task.type,
+        confidence: 1,
+        reason: 'direct action task',
+        parameters: {},
+        timestamp: new Date().toISOString(),
+      };
+    }
 
-    // Emit activity
+    console.log(`[ROUTER] Routing task: "${task.task}"`);
     emitAgentActivity(io, goalId, 'router', 'routing_task', {
       taskId: task.id,
       taskDescription: task.task,

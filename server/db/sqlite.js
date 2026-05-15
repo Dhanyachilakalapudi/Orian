@@ -87,7 +87,6 @@ async function createTables() {
       if (err) reject(err);
     });
 
-    // Files table
     db.run(`
       CREATE TABLE IF NOT EXISTS files (
         id TEXT PRIMARY KEY,
@@ -98,6 +97,33 @@ async function createTables() {
         size INTEGER,
         createdAt TEXT NOT NULL,
         FOREIGN KEY (goalId) REFERENCES goals(id)
+      )
+    `, (err) => {
+      if (err) reject(err);
+    });
+
+    db.run(`
+      CREATE TABLE IF NOT EXISTS integrations (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        goalId TEXT NOT NULL,
+        provider TEXT NOT NULL,
+        accessToken TEXT NOT NULL,
+        refreshToken TEXT,
+        metadata TEXT,
+        createdAt TEXT NOT NULL,
+        UNIQUE(goalId, provider)
+      )
+    `, (err) => {
+      if (err) reject(err);
+    });
+
+    db.run(`
+      CREATE TABLE IF NOT EXISTS users (
+        id TEXT PRIMARY KEY,
+        email TEXT UNIQUE NOT NULL,
+        password TEXT NOT NULL,
+        name TEXT,
+        createdAt TEXT NOT NULL
       )
     `, (err) => {
       if (err) reject(err);
@@ -335,4 +361,34 @@ module.exports = {
   addFile,
   getFiles,
   closeDatabase,
+  createUser,
+  getUserByEmail,
+  getUserById,
 };
+
+function createUser(userData) {
+  return new Promise((resolve, reject) => {
+    const { id, email, password, name, createdAt } = userData;
+    db.run(
+      'INSERT INTO users (id, email, password, name, createdAt) VALUES (?, ?, ?, ?, ?)',
+      [id, email, password, name || '', createdAt],
+      (err) => { if (err) reject(err); else resolve(id); }
+    );
+  });
+}
+
+function getUserByEmail(email) {
+  return new Promise((resolve, reject) => {
+    db.get('SELECT * FROM users WHERE email = ?', [email], (err, row) => {
+      if (err) reject(err); else resolve(row || null);
+    });
+  });
+}
+
+function getUserById(id) {
+  return new Promise((resolve, reject) => {
+    db.get('SELECT * FROM users WHERE id = ?', [id], (err, row) => {
+      if (err) reject(err); else resolve(row || null);
+    });
+  });
+}

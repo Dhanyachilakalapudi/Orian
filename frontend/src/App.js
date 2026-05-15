@@ -9,11 +9,13 @@ import Loader from './components/Loader';
 import TaskHistory from './components/TaskHistory';
 import DotsBackground from './components/DotsBackground';
 import Toast from './components/Toast';
+import Integrations from './components/Integrations';
+import AuthModal from './components/AuthModal';
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL || 'http://localhost:3000';
 
 const LogoIcon = () => (
-  <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#0a0a0a" strokeWidth="1.5" strokeLinecap="round">
+  <svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="#0a0a0a" strokeWidth="1.5" strokeLinecap="round">
     <line x1="12" y1="2" x2="12" y2="22" />
     <line x1="2" y1="12" x2="22" y2="12" />
     <line x1="4.93" y1="4.93" x2="19.07" y2="19.07" />
@@ -31,6 +33,9 @@ function App() {
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [toast, setToast] = useState(null);
+  const [activeGoalId, setActiveGoalId] = useState(null);
+  const [token, setToken] = useState(() => localStorage.getItem('orian_token') || null);
+  const [user, setUser] = useState(() => { try { return JSON.parse(localStorage.getItem('orian_user')); } catch { return null; } });
   const socketRef = useRef(null);
   const activeTaskRef = useRef(null);
 
@@ -61,13 +66,21 @@ function App() {
       });
     });
 
+    socket.on('task_cancelled', (data) => {
+      if (data.goalId !== activeTaskRef.current) return;
+      setTasks(prev => prev.map(t => t.id === activeTaskRef.current ? { ...t, status: 'cancelled' } : t));
+      setToast('task stopped.');
+      setView('input');
+    });
+
     socket.on('task_complete', (data) => {
       if (data.goalId !== activeTaskRef.current) return;
       const r = data.result || {};
       const report = r.report?.content || r.summary?.main || JSON.stringify(r, null, 2);
-      setTasks(prev => prev.map(t => t.id === activeTaskRef.current ? { ...t, status: 'completed', result: report } : t));
+      const artifacts = r.artifacts || { code: [], files: [] };
+      setTasks(prev => prev.map(t => t.id === activeTaskRef.current ? { ...t, status: 'completed', result: report, artifacts } : t));
       setToast('task completed successfully!');
-      setTimeout(() => { setFinalResult(report); setView('result'); }, 800);
+      setTimeout(() => { setFinalResult({ report, artifacts }); setView('result'); }, 800);
     });
 
     socket.on('task_error', (data) => {
@@ -162,6 +175,9 @@ function App() {
 
   const handleGetStarted = () => setShowApp(true);
 
+  const handleAuth = (u, t) => { setUser(u); setToken(t); setShowApp(true); };
+  const handleLogout = () => { localStorage.removeItem('orian_token'); localStorage.removeItem('orian_user'); setToken(null); setUser(null); };
+
   const handleSubmitGoal = async (goal) => {
     const newTask = { id: null, goal, status: 'processing', time: new Date().toLocaleTimeString() };
     setAgentMessages([]);
@@ -171,7 +187,7 @@ function App() {
     try {
       const res = await fetch(`${BACKEND_URL}/api/goal`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
         body: JSON.stringify({ goal }),
       });
       const data = await res.json();
@@ -179,6 +195,7 @@ function App() {
 
       newTask.id = data.goalId;
       activeTaskRef.current = data.goalId;
+      setActiveGoalId(data.goalId);
       setTasks(prev => [newTask, ...prev]);
 
       if (socketRef.current) {
@@ -191,9 +208,24 @@ function App() {
     }
   };
 
+  const handleStopGoal = async () => {
+    const goalId = activeTaskRef.current;
+    if (!goalId) return;
+    try {
+      await fetch(`${BACKEND_URL}/api/goal/${goalId}/cancel`, {
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${token}` },
+      });
+    } catch (_) {
+      setTasks(prev => prev.map(t => t.id === goalId ? { ...t, status: 'cancelled' } : t));
+      setToast('task stopped.');
+      setView('input');
+    }
+  };
+
   const handleSelectTask = (task) => {
     if (task.result) {
-      setFinalResult(task.result);
+      setFinalResult({ report: task.result, artifacts: task.artifacts || { code: [], files: [] } });
       setView('result');
     }
   };
@@ -201,7 +233,7 @@ function App() {
   const handleNewGoal = () => {
     setView('input');
     setAgentMessages([]);
-    setFinalResult('');
+    setFinalResult({ report: '', artifacts: { code: [], files: [] } });
     setLoaderStep(0);
   };
 
@@ -209,6 +241,7 @@ function App() {
     return (
       <div className="app">
         <DotsBackground />
+        {!token && <AuthModal onAuth={handleAuth} />}
         <div className="app-layout">
           <aside className={`sidebar ${sidebarCollapsed ? 'collapsed' : ''}`} id="sidebar">
             <div className="sidebar-header">
@@ -230,7 +263,26 @@ function App() {
                 </svg>
               </button>
             </div>
-            {!sidebarCollapsed && <TaskHistory tasks={tasks} onSelect={handleSelectTask} onNewGoal={handleNewGoal} />}
+            {!sidebarCollapsed && (
+              <>
+                <div className="sidebar-top">
+                  <TaskHistory tasks={tasks} onSelect={handleSelectTask} />
+                </div>
+                <div className="sidebar-bottom">
+                  <Integrations token={token} />
+                  <button className="taskhistory-new-btn" style={{ marginTop: '0.75rem' }} onClick={handleNewGoal}>
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
+                      <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
+                    </svg>
+                    new goal
+                  </button>
+                  <div className="sidebar-user">
+                    <span className="sidebar-user-email">{user?.email}</span>
+                    <button className="sidebar-logout-btn" onClick={handleLogout}>sign out</button>
+                  </div>
+                </div>
+              </>
+            )}
           </aside>
           <div className="resize-handle" id="resize-handle">
             <div className="resize-dots">
@@ -242,7 +294,7 @@ function App() {
               <span /><span /><span />
             </button>
             {view === 'input' && <GoalForm onSubmit={handleSubmitGoal} />}
-            {view === 'loader' && <Loader currentStep={loaderStep} messages={agentMessages} />}
+            {view === 'loader' && <Loader currentStep={loaderStep} messages={agentMessages} onStop={handleStopGoal} />}
             {view === 'result' && <ResultSection result={finalResult} onNewGoal={handleNewGoal} />}
           </main>
         </div>
@@ -260,7 +312,8 @@ function App() {
                   </svg>
                 </button>
               </div>
-              <TaskHistory tasks={tasks} onSelect={handleSelectTask} onNewGoal={handleNewGoal} />
+              <TaskHistory tasks={tasks} onSelect={handleSelectTask} />
+                <Integrations token={token} />
             </div>
           </div>
         )}

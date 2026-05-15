@@ -85,21 +85,11 @@ async function startWorker(socketIoInstance) {
  * @returns {Promise<Object>} - Job result
  */
 async function processJob(job, io) {
-  const { goalId, goal, description } = job.data;
+  const { goalId, goal, description, userId } = job.data;
 
   try {
-    console.log(`\n[WORKER] Processing job: ${goalId}`);
-    console.log(`[WORKER] Goal: "${goal}"`);
-
-    // Update job progress
     await job.updateProgress(5);
-
-    // Execute the goal with the autonomous workflow
-    const result = await executeGoal(
-      goalId,
-      { goal, description },
-      io
-    );
+    const result = await executeGoal(goalId, { goal, description, userId }, io);
 
     // Complete with final progress
     await job.updateProgress(100);

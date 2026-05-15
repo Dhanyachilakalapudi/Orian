@@ -12,7 +12,7 @@ const AgentIcons = {
   system: <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14M4.93 4.93a10 10 0 0 0 0 14.14"/></svg>,
 };
 
-function Loader({ currentStep = 0, messages = [] }) {
+function Loader({ currentStep = 0, messages = [], onStop }) {
   const feedRef = useRef(null);
   const activeAgent = messages[messages.length - 1]?.agent ?? null;
 
@@ -33,7 +33,14 @@ function Loader({ currentStep = 0, messages = [] }) {
           <div className="loader-particle p3" />
         </div>
         <p className="loader-step">{steps[currentStep] ?? 'processing'}...</p>
-
+        {onStop && (
+          <button className="loader-stop-btn" onClick={onStop}>
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor">
+              <rect x="4" y="4" width="16" height="16" rx="2" />
+            </svg>
+            stop
+          </button>
+        )}
       </div>
       <div className="loader-feed" ref={feedRef}>
         <div className="loader-feed-header">

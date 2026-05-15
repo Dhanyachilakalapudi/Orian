@@ -111,6 +111,7 @@ async function addTaskToQueue(goalId, goalData) {
         goalId,
         goal: goalData.goal,
         description: goalData.description || '',
+        userId: goalData.userId || null,
         createdAt: new Date().toISOString(),
       },
       {

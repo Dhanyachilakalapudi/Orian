@@ -20,10 +20,10 @@ async function callGroq(prompt, options = {}) {
     systemPrompt = 'You are a helpful AI assistant.',
   } = options;
 
-  const apiKey = process.env.GROQ_API_KEY;
+  const apiKey = options.apiKey || process.env.GROQ_API_KEY;
 
   if (!apiKey) {
-    throw new Error('GROQ_API_KEY environment variable not set');
+    throw new Error('GROQ_API_KEY not set');
   }
 
   console.log(`[GROQ] Calling model: ${model}`);

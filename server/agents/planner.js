@@ -7,6 +7,7 @@ const { callGroqJson } = require('../tools/groq');
 const { PLANNER_SYSTEM_PROMPT, getPlannerPrompt } = require('../tools/prompts');
 const { addTaskLog } = require('../db/sqlite');
 const { emitAgentActivity } = require('../sockets/socket');
+const { listIntegrations } = require('../db/integrations');
 
 /**
  * Run the planner agent
@@ -16,21 +17,18 @@ const { emitAgentActivity } = require('../sockets/socket');
  * @param {Object} io - Socket.io instance for live updates
  * @returns {Promise<Object>} - Plan with subtasks
  */
-async function runPlanner(goalId, goal, description = '', io = null) {
+async function runPlanner(goalId, goal, description = '', io = null, userId = null) {
   try {
     console.log(`[PLANNER] Starting plan generation for goal: "${goal}"`);
-    
-    // Emit activity
-    emitAgentActivity(io, goalId, 'planner', 'analyzing_goal', {
-      goal,
-      description,
-    });
 
-    // Log to database
+    emitAgentActivity(io, goalId, 'planner', 'analyzing_goal', { goal, description });
     await addTaskLog(goalId, 'planner_start', 'Planner agent started analyzing goal');
 
-    // Generate prompt
-    const prompt = getPlannerPrompt(goal, description);
+    const integrations = userId ? await listIntegrations(userId) : [];
+    const connectedIntegrations = integrations.map(i => i.provider);
+    console.log(`[PLANNER] userId: ${userId}, connected integrations: ${connectedIntegrations.join(', ') || 'none'}`);
+
+    const prompt = getPlannerPrompt(goal, description, connectedIntegrations);
 
     console.log(`[PLANNER] Calling Groq with prompt (${prompt.length} chars)`);
 
@@ -107,7 +105,7 @@ function validatePlan(plan) {
       task.task &&
       typeof task.task === 'string' &&
       task.type &&
-      ['research', 'analysis', 'generation', 'execution'].includes(task.type) &&
+      ['research', 'analysis', 'generation', 'execution', 'notion_action', 'slack_action', 'github_action', 'google_action'].includes(task.type) &&
       Array.isArray(task.depends_on) &&
       ['high', 'medium', 'low'].includes(task.priority) &&
       typeof task.estimated_time_minutes === 'number'

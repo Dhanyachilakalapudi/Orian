@@ -19,7 +19,10 @@ const { setupSocket } = require('./sockets/socket');
 const goalRoutes = require('./routes/goal');
 const taskRoutes = require('./routes/tasks');
 const webhookRoutes = require('./routes/webhook');
+const integrationsRoutes = require('./routes/integrations');
+const authRoutes = require('./routes/auth');
 const { initializeRedis } = require('./queues/taskQueue');
+const { router: orianApiRoutes, initializeApiRoutes } = require('./src/routes/api');
 
 // Initialize Express app
 const app = express();
@@ -119,9 +122,13 @@ app.get('/api/stats/queue', async (req, res) => {
 });
 
 // Mount API routes
+app.use('/api', orianApiRoutes);
+app.use('/', orianApiRoutes);
 app.use('/api/goal', goalRoutes);
 app.use('/api/tasks', taskRoutes);
 app.use('/api/webhook', webhookRoutes);
+app.use('/', authRoutes);
+app.use('/', integrationsRoutes);
 
 // 404 handler
 app.use((req, res) => {
@@ -152,6 +159,7 @@ async function initializeSystem() {
     // 1. Initialize SQLite database
     console.log('[DB] Initializing SQLite database...');
     await initializeDatabase();
+    await initializeApiRoutes();
     console.log('[DB] ✓ SQLite database initialized successfully');
 
     // 2. Initialize Redis connection for BullMQ

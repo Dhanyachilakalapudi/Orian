@@ -1,19 +1,68 @@
-import React from 'react';
+import React, { useState, useMemo } from 'react';
 import './ResultSection.css';
 
+function buildLiveHtml(code, files) {
+  const htmlFile = files.find(f => f.filename?.endsWith('.html') || f.format === 'html');
+  if (htmlFile?.content) return htmlFile.content;
+
+  const allCode = code.map(c => c.code || '').join('\n\n');
+  const cssBlocks = [...allCode.matchAll(/```css\n([\s\S]*?)```/g)].map(m => m[1]).join('\n');
+  const jsBlocks = [...allCode.matchAll(/```(?:js|javascript)\n([\s\S]*?)```/g)].map(m => m[1]).join('\n');
+  const htmlBlocks = [...allCode.matchAll(/```(?:html)\n([\s\S]*?)```/g)].map(m => m[1]).join('\n');
+
+  const rawJs = code.map(c => {
+    const raw = c.code || '';
+    if (!raw.includes('```')) return raw;
+    return '';
+  }).join('\n');
+
+  if (!htmlBlocks && !jsBlocks && !rawJs && !cssBlocks) return null;
+
+  return `<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<style>
+  body { font-family: sans-serif; margin: 0; padding: 16px; }
+  ${cssBlocks}
+</style>
+</head>
+<body>
+${htmlBlocks}
+<script>
+${jsBlocks || rawJs}
+</script>
+</body>
+</html>`;
+}
+
 function ResultSection({ result, onNewGoal }) {
+  const report = typeof result === 'string' ? result : result?.report || '';
+  const artifacts = typeof result === 'object' ? result?.artifacts : { code: [], files: [] };
+  const code = artifacts?.code || [];
+  const files = artifacts?.files || [];
+
+  const liveHtml = useMemo(() => buildLiveHtml(code, files), [code, files]);
+  const hasLive = !!liveHtml;
+  const hasCode = code.length > 0;
+
+  const [tab, setTab] = useState('report');
+
   const handleDownload = () => {
-    const blob = new Blob([result], { type: 'text/plain' });
+    const content = tab === 'live' && liveHtml ? liveHtml : report;
+    const ext = tab === 'live' ? 'html' : 'md';
+    const blob = new Blob([content], { type: 'text/plain' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `orian-result-${Date.now()}.md`;
+    a.download = `orian-result-${Date.now()}.${ext}`;
     a.click();
     URL.revokeObjectURL(url);
   };
 
   const handleCopy = () => {
-    navigator.clipboard.writeText(result);
+    const content = tab === 'live' && liveHtml ? liveHtml : report;
+    navigator.clipboard.writeText(content);
   };
 
   return (
@@ -37,8 +86,7 @@ function ResultSection({ result, onNewGoal }) {
           <div style={{ display: 'flex', gap: '0.5rem' }}>
             <button onClick={handleCopy} className="download-btn">
               <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <rect x="9" y="9" width="13" height="13" rx="2" ry="2"/>
-                <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
+                <rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
               </svg>
               copy
             </button>
@@ -52,7 +100,41 @@ function ResultSection({ result, onNewGoal }) {
             </button>
           </div>
         </div>
-        <div className="result-content">{result}</div>
+
+        {(hasLive || hasCode) && (
+          <div className="result-tabs">
+            <button className={`result-tab ${tab === 'report' ? 'active' : ''}`} onClick={() => setTab('report')}>report</button>
+            {hasCode && <button className={`result-tab ${tab === 'code' ? 'active' : ''}`} onClick={() => setTab('code')}>code</button>}
+            {hasLive && <button className={`result-tab ${tab === 'live' ? 'active' : ''}`} onClick={() => setTab('live')}>
+              <span className="live-dot" />live preview
+            </button>}
+          </div>
+        )}
+
+        {tab === 'report' && (
+          <div className="result-content">{report}</div>
+        )}
+
+        {tab === 'code' && (
+          <div className="result-content">
+            {code.map((c, i) => (
+              <div key={i} className="result-code-block">
+                <div className="result-code-label">{c.description || `snippet ${i + 1}`} · {c.language}</div>
+                <pre><code>{c.code}</code></pre>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {tab === 'live' && liveHtml && (
+          <iframe
+            className="result-preview"
+            srcDoc={liveHtml}
+            sandbox="allow-scripts"
+            title="live preview"
+          />
+        )}
+
         <button onClick={onNewGoal} className="new-goal-btn">
           <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
             <line x1="12" y1="5" x2="12" y2="19" />

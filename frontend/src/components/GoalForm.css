@@ -22,7 +22,7 @@
 }
 
 .goalform-title {
-  font-size: 2rem;
+  font-size: 3rem;
   font-weight: 700;
   color: #0a0a0a;
   text-transform: lowercase;
@@ -31,7 +31,7 @@
 }
 
 .goalform-codename {
-  font-size: 0.95rem;
+  font-size: 1.1rem;
   font-style: italic;
   color: #555555;
   text-transform: lowercase;
@@ -48,12 +48,12 @@
   display: flex;
   align-items: flex-end;
   gap: 0.75rem;
-  width: 50%;
+  width: 70%;
   background: rgba(255, 255, 255, 0.25);
   border: 1px solid rgba(255, 255, 255, 0.14);
   border-bottom-color: rgba(255, 255, 255, 0.03);
-  border-radius: 20px;
-  padding: 1rem 1rem 1rem 1.5rem;
+  border-radius: 24px;
+  padding: 1.25rem 1.25rem 1.25rem 2rem;
   backdrop-filter: blur(0.8px);
   -webkit-backdrop-filter: blur(0.8px);
   box-shadow:
@@ -78,12 +78,13 @@
   border: none;
   outline: none;
   color: #0a0a0a;
-  font-size: 1rem;
-  line-height: 1.6;
+  font-size: 1.15rem;
+  line-height: 1.7;
   resize: none;
   font-family: 'Instrument Serif', 'Playfair Display', Georgia, serif;
-  max-height: 160px;
+  max-height: 220px;
   overflow-y: auto;
+  min-height: 60px;
 }
 
 .goalform-bar textarea::placeholder {
@@ -91,12 +92,12 @@
 }
 
 .goalform-send-btn {
-  height: 42px;
+  height: 44px;
   border-radius: 50px;
   background: #0a0a0a;
   border: none;
   color: #fff;
-  font-size: 1.1rem;
+  font-size: 0.95rem;
   cursor: pointer;
   display: flex;
   align-items: center;
@@ -105,19 +106,20 @@
   transition: all 0.25s ease;
   box-shadow: 0 2px 8px rgba(0,0,0,0.2);
   overflow: hidden;
-  width: 42px;
+  width: 44px;
   gap: 0;
   padding: 0;
 }
 
 .goalform-send-btn.has-text {
-  width: 90px;
-  gap: 0.35rem;
-  padding: 0 1rem;
+  width: 100px;
+  gap: 0.4rem;
+  padding: 0 1.25rem;
+  flex-direction: row-reverse;
 }
 
 .goalform-send-label {
-  font-size: 0.875rem;
+  font-size: 0.95rem;
   font-weight: 600;
   font-family: 'Instrument Serif', 'Playfair Display', Georgia, serif;
   text-transform: lowercase;
@@ -158,6 +160,7 @@
   }
 
   .goalform-chips {
+    width: 100%;
     justify-content: flex-start;
   }
 }
@@ -191,7 +194,7 @@ kbd {
   flex-wrap: wrap;
   gap: 0.5rem;
   margin-bottom: 1.5rem;
-  width: 50%;
+  width: 70%;
   justify-content: center;
 }
 

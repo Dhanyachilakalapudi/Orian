@@ -7,11 +7,11 @@
   backdrop-filter: none;
   display: flex;
   flex-direction: column;
-  flex: 1;
 }
 
 .taskhistory-new-btn {
-  margin-top: auto;
+  margin-top: 0;
+  margin-bottom: 1rem;
 }
 
 .taskhistory-heading {
@@ -20,6 +20,7 @@
   color: #888888;
   text-transform: lowercase;
   letter-spacing: 0.05em;
+  margin-top: 1.25rem;
   margin-bottom: 1rem;
 }
 
