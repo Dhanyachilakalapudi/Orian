@@ -63,16 +63,11 @@ function App() {
 
     socket.on('task_complete', (data) => {
       if (data.goalId !== activeTaskRef.current) return;
-      const report = data.result?.summary?.main
-        ? `${data.result.summary.main}\n\n${(data.result.summary.keyPoints || []).map((p, i) => `${i + 1}. ${p}`).join('\n')}`
-        : data.result?.report?.contentPreview
-        || JSON.stringify(data.result?.summary || data.result, null, 2);
+      const r = data.result || {};
+      const report = r.report?.content || r.summary?.main || JSON.stringify(r, null, 2);
       setTasks(prev => prev.map(t => t.id === activeTaskRef.current ? { ...t, status: 'completed', result: report } : t));
       setToast('task completed successfully!');
-      setTimeout(() => {
-        setFinalResult(report);
-        setView('result');
-      }, 800);
+      setTimeout(() => { setFinalResult(report); setView('result'); }, 800);
     });
 
     socket.on('task_error', (data) => {

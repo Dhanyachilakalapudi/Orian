@@ -182,34 +182,24 @@ async function executeGoal(goalId, goalData, io) {
 
     const synthesisContent = formatSynthesis(goalData.goal, allFindings, results);
 
-    // Generate report file
     console.log('Generating final report...');
+    const reportContent = [
+      synthesisContent.summary,
+      synthesisContent.findings,
+      synthesisContent.artifacts,
+      synthesisContent.execution,
+    ].join('\n\n');
 
-    const reportFile = await createMarkdownReport(goalId, {
-      title: `Report: ${goalData.goal}`,
+    const reportFile = {
+      filename: `report-${goalId}.md`,
+      content: reportContent,
       sections: [
-        {
-          title: 'Executive Summary',
-          content: synthesisContent.summary,
-        },
-        {
-          title: 'Findings',
-          content: synthesisContent.findings,
-        },
-        {
-          title: 'Generated Artifacts',
-          content: synthesisContent.artifacts,
-        },
-        {
-          title: 'Execution Summary',
-          content: synthesisContent.execution,
-        },
+        { title: 'Executive Summary', content: synthesisContent.summary },
+        { title: 'Findings', content: synthesisContent.findings },
+        { title: 'Generated Artifacts', content: synthesisContent.artifacts },
+        { title: 'Execution Summary', content: synthesisContent.execution },
       ],
-      metadata: {
-        createdAt: new Date().toISOString(),
-        summary: synthesisContent.summary,
-      },
-    }, io);
+    };
 
     console.log(`✓ Report generated: ${reportFile.filename}`);
 
