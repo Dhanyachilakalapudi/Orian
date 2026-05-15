@@ -167,9 +167,11 @@ async function runCodeAgent(goalId, task, options = {}, io = null) {
  */
 async function executeJavaScriptCode(code, timeout = 10000) {
   return new Promise((resolve, reject) => {
+    let tempFile = null;
+
     try {
       // Create temporary file
-      const tempFile = path.join(codesDir, `temp_${Date.now()}.js`);
+      tempFile = path.join(codesDir, `temp_${Date.now()}.js`);
 
       fs.writeFileSync(tempFile, code, 'utf-8');
 
@@ -193,7 +195,7 @@ async function executeJavaScriptCode(code, timeout = 10000) {
     } catch (error) {
       // Clean up temp file
       try {
-        fs.unlinkSync(tempFile);
+        if (tempFile) fs.unlinkSync(tempFile);
       } catch (e) {
         // Ignore cleanup errors
       }

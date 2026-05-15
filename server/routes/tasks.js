@@ -5,7 +5,7 @@
 
 const express = require('express');
 const router = express.Router();
-const { getJobStatus } = require('../queues/taskQueue');
+const { getJobStatus, getTaskQueue } = require('../queues/taskQueue');
 const { getTaskLogs } = require('../db/sqlite');
 
 /**
@@ -106,8 +106,8 @@ router.delete('/:goalId', async (req, res) => {
 
     console.log(`[TASKS] Cancelling task: ${goalId}`);
 
-    const { taskQueue } = require('../queues/taskQueue');
-    const job = await taskQueue.getJob(goalId);
+    const queue = getTaskQueue();
+    const job = await queue.getJob(goalId);
 
     if (!job) {
       return res.status(404).json({

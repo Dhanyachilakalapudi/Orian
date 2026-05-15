@@ -59,12 +59,18 @@ async function runWebAgent(goalId, searchQuery, options = {}, io = null) {
 
     const synthesisPrompt = getWebAgentPrompt(searchQuery, formattedResults);
 
-    const synthesis = await callGroqJson(synthesisPrompt, {
-      model: process.env.GROQ_MODEL || 'mixtral-8x7b-32768',
-      maxTokens: 2048,
-      temperature: 0.5,
-      systemPrompt: WEB_AGENT_SYSTEM_PROMPT,
-    });
+    let synthesis;
+    try {
+      synthesis = await callGroqJson(synthesisPrompt, {
+        model: process.env.GROQ_MODEL || 'mixtral-8x7b-32768',
+        maxTokens: 2048,
+        temperature: 0.5,
+        systemPrompt: WEB_AGENT_SYSTEM_PROMPT,
+      });
+    } catch (groqErr) {
+      console.warn('[WEB_AGENT] Groq synthesis failed, using raw results:', groqErr.message);
+      synthesis = { summary: formattedResults?.toString() || searchQuery, keyFindings: [], sources: [] };
+    }
 
     console.log('[WEB_AGENT] Synthesis complete');
 

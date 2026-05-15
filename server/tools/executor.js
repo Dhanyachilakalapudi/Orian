@@ -69,9 +69,12 @@ async function executeGoal(goalId, goalData, io) {
       progress: 20,
     });
 
-    const routingDecisions = await Promise.all(
-      plan.subtasks.map((task) => routeTask(goalId, task, io))
-    );
+    const routingDecisions = [];
+    for (const task of plan.subtasks) {
+      const decision = await routeTask(goalId, task, io);
+      routingDecisions.push(decision);
+      await new Promise(r => setTimeout(r, 500));
+    }
 
     console.log(`✓ All ${routingDecisions.length} tasks routed`);
 
@@ -107,9 +110,9 @@ async function executeGoal(goalId, goalData, io) {
 
       console.log(`\nBatch ${batchIndex + 1}/${executionOrder.length}: ${batchIds.length} tasks`);
 
-      // Execute batch in parallel
-      const batchResults = await Promise.all(
-        batchIds.map(async (taskId) => {
+      // Execute tasks sequentially to avoid rate limits
+      const batchResults = [];
+      for (const taskId of batchIds) {
           const task = getSubtask(plan, taskId);
           const routing = routingDecisions.find((r) => r.taskId === taskId);
 
@@ -127,24 +130,12 @@ async function executeGoal(goalId, goalData, io) {
             currentTask: taskId,
           });
 
-          // Execute task based on assigned agent
-          const result = await executeTask(
-            goalId,
-            task,
-            routing,
-            io
-          );
-
+          const result = await executeTask(goalId, task, routing, io);
           completedTasks++;
+          batchResults.push({ taskId, task: task.task, agent: routing.assignedAgent, result });
 
-          return {
-            taskId,
-            task: task.task,
-            agent: routing.assignedAgent,
-            result,
-          };
-        })
-      );
+          await new Promise(r => setTimeout(r, 1000));
+      }
 
       // Store results by agent type
       batchResults.forEach((batchResult) => {

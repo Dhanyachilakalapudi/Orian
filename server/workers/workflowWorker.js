@@ -47,4 +47,4 @@ function startWorkflowWorker() {
   }
 }
 
-module.exports = startWorkflowWorker;m
+module.exports = startWorkflowWorker;

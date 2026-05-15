@@ -1,5 +1,5 @@
 -- ============================================
--- AUTOPILOT DATABASE SCHEMA
+-- ORIAN DATABASE SCHEMA
 -- ============================================
 
 -- TASKS TABLE

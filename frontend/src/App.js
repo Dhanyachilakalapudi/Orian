@@ -1,6 +1,7 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import './App.css';
 import Lenis from 'lenis';
+import { io as socketIO } from 'socket.io-client';
 import GoalForm from './components/GoalForm';
 import LiveFeed from './components/LiveFeed';
 import ResultSection from './components/ResultSection';
@@ -8,6 +9,8 @@ import Loader from './components/Loader';
 import TaskHistory from './components/TaskHistory';
 import DotsBackground from './components/DotsBackground';
 import Toast from './components/Toast';
+
+const BACKEND_URL = process.env.REACT_APP_BACKEND_URL || 'http://localhost:3000';
 
 const LogoIcon = () => (
   <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#0a0a0a" strokeWidth="1.5" strokeLinecap="round">
@@ -28,6 +31,74 @@ function App() {
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [toast, setToast] = useState(null);
+  const socketRef = useRef(null);
+  const activeTaskRef = useRef(null);
+
+  useEffect(() => {
+    const socket = socketIO(BACKEND_URL, { autoConnect: false });
+    socketRef.current = socket;
+
+    socket.on('agent_activity', (data) => {
+      if (data.goalId !== activeTaskRef.current) return;
+      const agentName = data.agent?.toLowerCase();
+      const stepMap = { planner: 0, router: 1, web_agent: 2, critic: 3, summarizer: 4 };
+      const step = stepMap[agentName];
+      if (step !== undefined) setLoaderStep(step);
+      if (data.action !== 'error') {
+        setAgentMessages(prev => [...prev, { agent: agentName, message: data.action?.replace(/_/g, ' ') }]);
+      }
+    });
+
+    socket.on('task_update', (data) => {
+      if (data.goalId !== activeTaskRef.current) return;
+      const stageMap = { planning: 0, routing: 1, execution_in_progress: 2, quality_review: 3, summarization: 4 };
+      const step = stageMap[data.stage];
+      if (step !== undefined) setLoaderStep(step);
+      setAgentMessages(prev => {
+        const last = prev[prev.length - 1];
+        if (last?.message === data.message) return prev;
+        return [...prev, { agent: data.stage?.split('_')[0] || 'system', message: data.message }];
+      });
+    });
+
+    socket.on('task_complete', (data) => {
+      if (data.goalId !== activeTaskRef.current) return;
+      const report = data.result?.summary?.main
+        ? `${data.result.summary.main}\n\n${(data.result.summary.keyPoints || []).map((p, i) => `${i + 1}. ${p}`).join('\n')}`
+        : data.result?.report?.contentPreview
+        || JSON.stringify(data.result?.summary || data.result, null, 2);
+      setTasks(prev => prev.map(t => t.id === activeTaskRef.current ? { ...t, status: 'completed', result: report } : t));
+      setToast('task completed successfully!');
+      setTimeout(() => {
+        setFinalResult(report);
+        setView('result');
+      }, 800);
+    });
+
+    socket.on('task_error', (data) => {
+      if (data.goalId !== activeTaskRef.current) return;
+      setTasks(prev => prev.map(t => t.id === activeTaskRef.current ? { ...t, status: 'failed' } : t));
+      setToast('something went wrong. please try again.');
+      setView('input');
+    });
+
+    socket.on('workflow-complete', (data) => {
+      if (data.goalId !== activeTaskRef.current) return;
+      const report = data.report || '';
+      setTasks(prev => prev.map(t => t.id === activeTaskRef.current ? { ...t, status: 'completed', result: report } : t));
+      setToast('task completed successfully!');
+      setTimeout(() => { setFinalResult(report); setView('result'); }, 800);
+    });
+
+    socket.on('workflow-error', (data) => {
+      if (data.goalId !== activeTaskRef.current) return;
+      setTasks(prev => prev.map(t => t.id === activeTaskRef.current ? { ...t, status: 'failed' } : t));
+      setToast('something went wrong. please try again.');
+      setView('input');
+    });
+
+    return () => socket.disconnect();
+  }, []);
 
   useEffect(() => {
     if (showApp) return;
@@ -97,36 +168,32 @@ function App() {
   const handleGetStarted = () => setShowApp(true);
 
   const handleSubmitGoal = async (goal) => {
-    const newTask = { id: Date.now(), goal, status: 'processing', time: new Date().toLocaleTimeString() };
-    setTasks(prev => [newTask, ...prev]);
+    const newTask = { id: null, goal, status: 'processing', time: new Date().toLocaleTimeString() };
     setAgentMessages([]);
     setLoaderStep(0);
     setView('loader');
 
-    const steps = [
-      { agent: 'planner', message: 'breaking goal into subtasks...' },
-      { agent: 'router', message: 'routing tasks to specialist agents...' },
-      { agent: 'webAgent', message: 'searching the internet...' },
-      { agent: 'critic', message: 'reviewing output quality...' },
-      { agent: 'summarizer', message: 'compiling final report...' },
-      { agent: 'system', message: 'task completed successfully!' }
-    ];
+    try {
+      const res = await fetch(`${BACKEND_URL}/api/goal`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ goal }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'failed to submit goal');
 
-    steps.forEach((step, i) => {
-      setTimeout(() => {
-        setLoaderStep(i);
-        setAgentMessages(prev => [...prev, step]);
-        if (i === steps.length - 1) {
-          setTasks(prev => prev.map(t => t.id === newTask.id ? { ...t, status: 'completed' } : t));
-          setToast('task completed successfully!');
-          setTimeout(() => {
-            setFinalResult('demo result: your multi-agent system has successfully processed the goal. in production, this would connect to groq llm, tavily search api, and execute real agent workflows.');
-            setTasks(prev => prev.map(t => t.id === newTask.id ? { ...t, result: 'demo result: your multi-agent system has successfully processed the goal. in production, this would connect to groq llm, tavily search api, and execute real agent workflows.' } : t));
-            setView('result');
-          }, 800);
-        }
-      }, i * 900);
-    });
+      newTask.id = data.goalId;
+      activeTaskRef.current = data.goalId;
+      setTasks(prev => [newTask, ...prev]);
+
+      if (socketRef.current) {
+        if (!socketRef.current.connected) socketRef.current.connect();
+        socketRef.current.emit('subscribe_goal', data.goalId);
+      }
+    } catch (err) {
+      setToast('failed to connect to server.');
+      setView('input');
+    }
   };
 
   const handleSelectTask = (task) => {

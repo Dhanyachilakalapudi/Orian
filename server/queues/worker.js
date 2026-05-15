@@ -6,7 +6,8 @@
 const { Worker } = require('bullmq');
 const Redis = require('ioredis');
 const { executeGoal } = require('../tools/executor');
-const { getTaskQueue } = require('./taskQueue');
+const { getTaskQueue, QUEUE_NAME } = require('./taskQueue');
+const { updateGoalStatus, addTaskLog } = require('../db/sqlite');
 const http = require('http');
 
 // Socket.io instance (will be passed in)
@@ -29,11 +30,12 @@ async function startWorker(socketIoInstance) {
       maxRetriesPerRequest: null,
       enableReadyCheck: false,
       enableOfflineQueue: true,
+      tls: redisUrl.startsWith('rediss://') ? { rejectUnauthorized: false } : undefined,
     });
 
     // Create worker
     const worker = new Worker(
-      'autopilot-tasks',
+      QUEUE_NAME,
       async (job) => {
         return await processJob(job, io);
       },
@@ -47,13 +49,20 @@ async function startWorker(socketIoInstance) {
       }
     );
 
+    await worker.waitUntilReady();
+
     // Worker event handlers
+    worker.on('active', (job) => {
+      console.log(`[WORKER] Active job: ${job.id}`);
+    });
+
     worker.on('completed', (job, result) => {
       console.log(`[WORKER] ✓ Job completed: ${job.id}`);
     });
 
     worker.on('failed', (job, error) => {
       console.error(`[WORKER] ✗ Job failed: ${job.id}`, error.message);
+      if (error.stack) console.error(error.stack);
     });
 
     worker.on('error', (error) => {
@@ -83,7 +92,7 @@ async function processJob(job, io) {
     console.log(`[WORKER] Goal: "${goal}"`);
 
     // Update job progress
-    job.progress(5);
+    await job.updateProgress(5);
 
     // Execute the goal with the autonomous workflow
     const result = await executeGoal(
@@ -93,7 +102,7 @@ async function processJob(job, io) {
     );
 
     // Complete with final progress
-    job.progress(100);
+    await job.updateProgress(100);
 
     console.log(`[WORKER] ✓ Job completed successfully`);
 
@@ -104,6 +113,16 @@ async function processJob(job, io) {
     };
   } catch (error) {
     console.error(`[WORKER] ✗ Job failed: ${error.message}`);
+
+    try {
+      await updateGoalStatus(goalId, 'failed', {
+        error: error.message,
+        timestamp: new Date().toISOString(),
+      });
+      await addTaskLog(goalId, 'worker_error', `Worker failed before completion: ${error.message}`);
+    } catch (dbError) {
+      console.error(`[WORKER] Failed to persist error for ${goalId}: ${dbError.message}`);
+    }
 
     // Report progress update on error
     if (io) {

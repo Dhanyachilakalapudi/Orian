@@ -147,6 +147,7 @@ app.use((err, req, res, next) => {
 async function initializeSystem() {
   try {
     console.log('\n========== AUTOPILOT INITIALIZATION ==========\n');
+    console.log('[BOOT] Queue reliability patch loaded');
 
     // 1. Initialize SQLite database
     console.log('[DB] Initializing SQLite database...');
@@ -157,6 +158,9 @@ async function initializeSystem() {
     console.log('[REDIS] Connecting to Redis...');
     await initializeRedis();
     console.log('[REDIS] ✓ Redis connection established');
+
+    // Reconcile goals that were saved to SQLite but are missing from Redis.
+    await requeuePendingGoals();
 
     // 3. Verify environment variables
     console.log('[ENV] Validating environment variables...');
@@ -179,6 +183,7 @@ async function initializeSystem() {
       port: process.env.PORT || 3000,
       nodeEnv: process.env.NODE_ENV || 'development',
       redisUrl: process.env.REDIS_URL || 'redis://localhost:6379',
+      queueName: process.env.QUEUE_NAME || 'orian-autopilot-tasks',
       groqModel: process.env.GROQ_MODEL || 'mixtral-8x7b-32768',
     };
 
@@ -186,12 +191,44 @@ async function initializeSystem() {
     console.log(`  - Port: ${config.port}`);
     console.log(`  - Environment: ${config.nodeEnv}`);
     console.log(`  - Redis: ${config.redisUrl}`);
+    console.log(`  - Queue: ${config.queueName}`);
     console.log(`  - Groq Model: ${config.groqModel}`);
 
     console.log('\n========== INITIALIZATION COMPLETE ==========\n');
   } catch (error) {
     console.error('[FATAL ERROR]', error.message);
     process.exit(1);
+  }
+}
+
+/**
+ * Re-enqueue SQLite goals that are still marked queued.
+ * This protects against Redis jobs disappearing while the DB source of truth remains queued.
+ */
+async function requeuePendingGoals() {
+  const { getTasksByStatus } = require('./db/sqlite');
+  const { addTaskToQueue, getJobStatus } = require('./queues/taskQueue');
+  const queuedGoals = await getTasksByStatus('queued');
+
+  if (queuedGoals.length === 0) {
+    console.log('[QUEUE] No pending SQLite goals to reconcile');
+    return;
+  }
+
+  console.log(`[QUEUE] Reconciling ${queuedGoals.length} queued SQLite goal(s)...`);
+
+  for (const queuedGoal of queuedGoals) {
+    const existingJob = await getJobStatus(queuedGoal.id);
+    if (existingJob) {
+      console.log(`[QUEUE] Goal ${queuedGoal.id} already has Redis job ${existingJob.jobId}`);
+      continue;
+    }
+
+    await addTaskToQueue(queuedGoal.id, {
+      goal: queuedGoal.goal,
+      description: queuedGoal.description || '',
+    });
+    console.log(`[QUEUE] Re-enqueued queued goal: ${queuedGoal.id}`);
   }
 }
 

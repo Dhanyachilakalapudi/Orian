@@ -40,7 +40,7 @@ function verifyWebhookSignature(req, signature) {
  *   "source": "external-system"
  * }
  */
-router.post('/trigger', (req, res) => {
+router.post('/trigger', async (req, res) => {
   try {
     const signature = req.headers['x-webhook-signature'];
 
@@ -69,7 +69,7 @@ router.post('/trigger', (req, res) => {
     const createdAt = new Date().toISOString();
 
     // Create goal record
-    createGoal({
+    await createGoal({
       id: goalId,
       goal: goal.trim(),
       description: description?.trim() || '',
@@ -81,7 +81,7 @@ router.post('/trigger', (req, res) => {
     });
 
     // Add to queue
-    addTaskToQueue(goalId, {
+    await addTaskToQueue(goalId, {
       goal: goal.trim(),
       description: description?.trim() || '',
       source: source || 'webhook',

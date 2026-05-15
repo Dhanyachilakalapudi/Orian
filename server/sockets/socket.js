@@ -7,14 +7,19 @@
 const { taskQueue } = require('../queues/taskQueue');
 const { getLogs } = require('../tools/logger');
 
-// Store active client connections
 const activeClients = new Map();
+let _io = null;
+
+function getIO() {
+  return _io;
+}
 
 /**
  * Setup Socket.io event listeners and handlers
  * @param {Object} io - Socket.io instance from server.js
  */
 function setupSocket(io) {
+  _io = io;
   // Main connection handler
   io.on('connection', (socket) => {
     const clientId = socket.id;
@@ -221,6 +226,7 @@ function getClientsForGoal(goalId) {
 
 module.exports = {
   setupSocket,
+  getIO,
   emitTaskUpdate,
   emitAgentActivity,
   emitError,

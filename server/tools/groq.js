@@ -82,7 +82,7 @@ async function callGroq(prompt, options = {}) {
             }
           } else {
             console.error(`[GROQ ERROR] Status ${res.statusCode}:`, data);
-            reject(new Error(`Groq API error: ${res.statusCode}`));
+            reject(new Error(`Groq API error: ${res.statusCode} ${data}`));
           }
         } catch (error) {
           console.error('[GROQ ERROR] Parse error:', error.message);
@@ -114,17 +114,19 @@ async function callGroq(prompt, options = {}) {
  */
 function parseJsonResponse(response) {
   try {
-    // Try direct parsing first
     return JSON.parse(response);
   } catch (e) {
-    // Try removing markdown code blocks
     const jsonMatch = response.match(/```(?:json)?\n?([\s\S]*?)\n?```/);
-    if (jsonMatch && jsonMatch[1]) {
-      try {
-        return JSON.parse(jsonMatch[1]);
-      } catch (e2) {
-        throw new Error('Failed to parse JSON from response');
-      }
+    if (jsonMatch) {
+      try { return JSON.parse(jsonMatch[1]); } catch (_) {}
+    }
+    const objMatch = response.match(/({[\s\S]*})/);
+    if (objMatch) {
+      try { return JSON.parse(objMatch[1]); } catch (_) {}
+    }
+    const arrMatch = response.match(/(\[[\s\S]*\])/);
+    if (arrMatch) {
+      try { return JSON.parse(arrMatch[1]); } catch (_) {}
     }
     throw new Error('No valid JSON found in response');
   }
@@ -137,20 +139,34 @@ function parseJsonResponse(response) {
  * @returns {Promise<Object>} - Parsed JSON response
  */
 async function callGroqJson(prompt, options = {}) {
-  try {
-    console.log('[GROQ] Calling with JSON response format');
-    
-    const response = await callGroq(prompt, {
-      ...options,
-      systemPrompt: (options.systemPrompt || 'You are a helpful AI assistant.') + 
-                   '\n\nAlways respond with valid JSON only. No markdown, no extra text.',
-    });
+  const maxRetries = 5;
+  let lastError;
 
-    return parseJsonResponse(response);
-  } catch (error) {
-    console.error('[GROQ ERROR] JSON parsing failed:', error.message);
-    throw error;
+  for (let i = 0; i < maxRetries; i++) {
+    try {
+      console.log('[GROQ] Calling with JSON response format');
+      const response = await callGroq(prompt, {
+        ...options,
+        systemPrompt: (options.systemPrompt || 'You are a helpful AI assistant.') +
+                     '\n\nAlways respond with valid JSON only. No markdown, no extra text.',
+      });
+      return parseJsonResponse(response);
+    } catch (error) {
+      lastError = error;
+      const is429 = error.message.includes('429');
+      if (is429 && i < maxRetries - 1) {
+        const match = error.message.match(/(\d+(\.\d+)?)s/);
+        const waitMs = match ? Math.ceil(parseFloat(match[1]) * 1000) + 500 : 5000;
+        console.warn(`[GROQ] Rate limited. Waiting ${waitMs}ms before retry...`);
+        await new Promise(r => setTimeout(r, waitMs));
+      } else {
+        console.error('[GROQ ERROR] JSON parsing failed:', error.message);
+        throw error;
+      }
+    }
   }
+
+  throw lastError;
 }
 
 /**

@@ -49,10 +49,12 @@ async function routeTask(goalId, task, io = null) {
 
     console.log(`[ROUTER] Decision: ${routing.agent} (confidence: ${routing.confidence})`);
 
-    // Validate routing decision
-    if (!VALID_AGENTS.includes(routing.agent)) {
+    // Validate routing decision — pick first valid agent if model returns combined value
+    const agentRaw = (routing.agent || '').split(/[|,\/]/)[0].trim();
+    if (!VALID_AGENTS.includes(agentRaw)) {
       throw new Error(`Invalid agent: ${routing.agent}`);
     }
+    routing.agent = agentRaw;
 
     if (routing.confidence < 0.6) {
       console.warn(`[ROUTER] Low confidence routing (${routing.confidence})`);

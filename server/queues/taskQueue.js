@@ -6,6 +6,7 @@
 const Redis = require('ioredis');
 const { Queue } = require('bullmq');
 
+const QUEUE_NAME = process.env.QUEUE_NAME || 'orian-autopilot-tasks';
 let redisClient = null;
 let taskQueue = null;
 
@@ -53,7 +54,7 @@ async function initializeRedis() {
     });
 
     // Initialize the BullMQ Queue
-    taskQueue = new Queue('autopilot-tasks', {
+    taskQueue = new Queue(QUEUE_NAME, {
       connection: redisClient,
       defaultJobOptions: {
         attempts: 3,
@@ -105,7 +106,7 @@ async function addTaskToQueue(goalId, goalData) {
     const queue = getTaskQueue();
 
     const job = await queue.add(
-      'execute-workflow', // Job name used by worker
+      'execute-workflow',
       {
         goalId,
         goal: goalData.goal,
@@ -113,9 +114,14 @@ async function addTaskToQueue(goalId, goalData) {
         createdAt: new Date().toISOString(),
       },
       {
-        jobId: goalId, // Ensure unique job per goal
+        jobId: goalId,
       }
     );
+
+    const queuedJob = await queue.getJob(goalId);
+    if (!queuedJob) {
+      throw new Error(`Task ${goalId} was not found in Redis after enqueue`);
+    }
 
     console.log(`[QUEUE] Task added successfully: ${goalId}`);
     return job;
@@ -125,9 +131,54 @@ async function addTaskToQueue(goalId, goalData) {
   }
 }
 
+/**
+ * Get the BullMQ status for a goal's queued job.
+ * Jobs are stored with BullMQ's generated ID, so look up by goalId in job data.
+ */
+async function getJobStatus(goalId) {
+  const queue = getTaskQueue();
+  const directJob = await queue.getJob(goalId);
+
+  if (directJob) {
+    const state = await directJob.getState();
+    return {
+      jobId: directJob.id,
+      state,
+      progress: directJob.progress,
+      attemptsMade: directJob.attemptsMade,
+      failedReason: directJob.failedReason || null,
+      data: directJob.data,
+      returnvalue: directJob.returnvalue || null,
+    };
+  }
+
+  const states = ['waiting', 'active', 'delayed', 'completed', 'failed'];
+
+  for (const state of states) {
+    const jobs = await queue.getJobs([state], 0, 100, false);
+    const job = jobs.find((candidate) => candidate?.data?.goalId === goalId);
+
+    if (job) {
+      return {
+        jobId: job.id,
+        state,
+        progress: job.progress,
+        attemptsMade: job.attemptsMade,
+        failedReason: job.failedReason || null,
+        data: job.data,
+        returnvalue: job.returnvalue || null,
+      };
+    }
+  }
+
+  return null;
+}
+
 module.exports = {
+  QUEUE_NAME,
   initializeRedis,
   getTaskQueue,
   getRedisClient,
-  addTaskToQueue
+  addTaskToQueue,
+  getJobStatus
 };
