@@ -26,6 +26,7 @@ function App() {
   const [loaderStep, setLoaderStep] = useState(0);
   const [tasks, setTasks] = useState([]);
   const [drawerOpen, setDrawerOpen] = useState(false);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [toast, setToast] = useState(null);
 
   useEffect(() => {
@@ -47,7 +48,11 @@ function App() {
     const sidebar = document.getElementById('sidebar');
     if (!handle || !sidebar) return;
     let dragging = false;
-    const onMouseDown = () => { dragging = true; document.body.style.cursor = 'col-resize'; };
+    const onMouseDown = () => {
+      if (sidebarCollapsed) return;
+      dragging = true;
+      document.body.style.cursor = 'col-resize';
+    };
     const onMouseMove = (e) => {
       if (!dragging) return;
       const newWidth = Math.min(Math.max(e.clientX, 160), 480);
@@ -62,7 +67,7 @@ function App() {
       window.removeEventListener('mousemove', onMouseMove);
       window.removeEventListener('mouseup', onMouseUp);
     };
-  }, [showApp]);
+  }, [showApp, sidebarCollapsed]);
 
   useEffect(() => {
     const navbar = document.getElementById('navbar');
@@ -143,12 +148,27 @@ function App() {
       <div className="app">
         <DotsBackground />
         <div className="app-layout">
-          <aside className="sidebar" id="sidebar">
-            <div className="sidebar-logo">
-              <LogoIcon />
-              <h1>orian</h1>
+          <aside className={`sidebar ${sidebarCollapsed ? 'collapsed' : ''}`} id="sidebar">
+            <div className="sidebar-header">
+              {!sidebarCollapsed && (
+                <div className="sidebar-logo">
+                  <LogoIcon />
+                  <h1>orian</h1>
+                </div>
+              )}
+              <button className="sidebar-collapse-btn" onClick={() => {
+                const sidebar = document.getElementById('sidebar');
+                if (sidebar) sidebar.style.width = '';
+                setSidebarCollapsed(o => !o);
+              }}>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  {sidebarCollapsed
+                    ? <><polyline points="9 18 15 12 9 6" /></>
+                    : <><polyline points="15 18 9 12 15 6" /></>}
+                </svg>
+              </button>
             </div>
-            <TaskHistory tasks={tasks} onSelect={handleSelectTask} onNewGoal={handleNewGoal} />
+            {!sidebarCollapsed && <TaskHistory tasks={tasks} onSelect={handleSelectTask} onNewGoal={handleNewGoal} />}
           </aside>
           <div className="resize-handle" id="resize-handle">
             <div className="resize-dots">
@@ -160,7 +180,7 @@ function App() {
               <span /><span /><span />
             </button>
             {view === 'input' && <GoalForm onSubmit={handleSubmitGoal} />}
-            {view === 'loader' && <Loader currentStep={loaderStep} />}
+            {view === 'loader' && <Loader currentStep={loaderStep} messages={agentMessages} />}
             {view === 'result' && <ResultSection result={finalResult} onNewGoal={handleNewGoal} />}
           </main>
         </div>
@@ -262,7 +282,8 @@ function App() {
           <div className="about-grid">
             <div className="about-left">
               <h2 className="section-title">about orian</h2>
-              <p className="section-text">orian is a goal-driven multi-agent ai platform that transforms natural language goals into executed results.</p>
+              <p className="section-text">orian is multi-agent autonomy that ships real work, end-to-end.</p>
+              <p className="section-text" style={{ marginTop: '1rem', fontSize: '1rem', color: '#555555' }}>tell orian what you want. a network of specialist agents plans, searches, writes, and executes — autonomously, without you lifting a finger.</p>
             </div>
             <div className="about-right">
               <div className="about-stat">
