@@ -75,48 +75,17 @@ async function runFileAgent(goalId, content, options = {}, io = null) {
 
     console.log('[FILE_AGENT] Content structured');
 
-    // Generate file path
-    const timestamp = Date.now();
-    const filePath = path.join(uploadsDir, `${timestamp}-${finalFilename}`);
-
-    console.log(`[FILE_AGENT] Writing file to: ${filePath}`);
-
-    fs.writeFileSync(filePath, fileContent, 'utf-8');
-
-    const fileSize = fs.statSync(filePath).size;
-
-    console.log(`[FILE_AGENT] File written successfully (${fileSize} bytes)`);
-
-    await addFile(goalId, finalFilename, filePath, fileFormat, fileSize);
-
     const result = {
       filename: finalFilename,
-      filepath: filePath,
       format: fileFormat,
-      size: fileSize,
+      content: fileContent,
+      size: Buffer.byteLength(fileContent),
       title,
-      summary: '',
       timestamp: new Date().toISOString(),
-      contentPreview: fileContent.substring(0, 200) + '...',
     };
 
-    // Log to database
-    await addTaskLog(
-      goalId,
-      'file_agent_complete',
-      `File generated: ${finalFilename}`,
-      {
-        filename: finalFilename,
-        size: fileSize,
-        format: fileFormat,
-      }
-    );
-
-    // Emit completion
-    emitAgentActivity(io, goalId, 'file_agent', 'generation_complete', {
-      filename: finalFilename,
-      size: fileSize,
-    });
+    await addTaskLog(goalId, 'file_agent_complete', `File generated: ${finalFilename}`, { filename: finalFilename, format: fileFormat });
+    emitAgentActivity(io, goalId, 'file_agent', 'generation_complete', { filename: finalFilename });
 
     return result;
   } catch (error) {

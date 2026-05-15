@@ -439,13 +439,13 @@ function formatSynthesis(goal, findings, results) {
   if (results.generated_files.length > 0) {
     artifactsContent += '\n**Files:**\n';
     results.generated_files.forEach((file) => {
-      artifactsContent += `- ${file.filename} (${file.size} bytes)\n`;
+      artifactsContent += `\n#### ${file.filename}\n\`\`\`\n${file.content || ''}\n\`\`\`\n`;
     });
   }
   if (results.code_executions.length > 0) {
-    artifactsContent += '\n**Code Executions:**\n';
+    artifactsContent += '\n**Code:**\n';
     results.code_executions.forEach((code) => {
-      artifactsContent += `- ${code.language} code (${code.codeSize} bytes)\n`;
+      artifactsContent += `\n#### ${code.description || 'code'} (${code.language})\n\`\`\`${code.language}\n${code.code || ''}\n\`\`\`\n`;
     });
   }
 

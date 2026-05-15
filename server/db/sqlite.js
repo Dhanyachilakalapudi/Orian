@@ -260,7 +260,7 @@ function getTaskLogs(goalId, limit = 100, offset = 0) {
  */
 function addFile(goalId, filename, filePath, fileType, size) {
   return new Promise((resolve, reject) => {
-    const id = `${goalId}-${filename}`;
+    const id = `${goalId}-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
     const createdAt = new Date().toISOString();
 
     db.run(
