@@ -1,0 +1,442 @@
+# 🚀 ORIAN -multi-agent autonomy that ships real work, end-to-end.
+
+> **"From a single objective to fully executed, production-ready output — autonomously."**
+
+[![Node.js](https://img.shields.io/badge/Backend-Node.js%20%2F%20Express-339933?style=flat-square&logo=node.js)](https://nodejs.org)
+[![React](https://img.shields.io/badge/Frontend-React%2018-61DAFB?style=flat-square&logo=react)](https://react.dev)
+[![PostgreSQL](https://img.shields.io/badge/State%20Ledger-PostgreSQL-4169E1?style=flat-square&logo=postgresql)](https://postgresql.org)
+[![Redis](https://img.shields.io/badge/Queue-Upstash%20Redis%20%2F%20BullMQ-DC382D?style=flat-square&logo=redis)](https://upstash.com)
+[![Groq](https://img.shields.io/badge/LLM-Groq%20llama--3.1--8b--instant-F55036?style=flat-square)](https://groq.com)
+[![Tavily](https://img.shields.io/badge/Web%20Search-Tavily%20API-0EA5E9?style=flat-square)](https://tavily.com)
+[![Socket.io](https://img.shields.io/badge/Streaming-Socket.io-010101?style=flat-square&logo=socket.io)](https://socket.io)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg?style=flat-square)](LICENSE)
+
+---
+
+AutoPilot is a **production-grade, crash-resilient, multi-agent orchestration platform** that accepts a single high-level objective and autonomously decomposes it into a fully executed, verifiable outcome — without continuous human steering at every step.
+
+Where brittle single-shot prompt wrappers fire one LLM call, hope for the best, and collapse the moment a sub-task requires real-world data or recoverable state, AutoPilot does something fundamentally different. It runs a **persistent agent pipeline**: breaking goals into parallelisable sub-tasks, grounding each reasoning step in live web evidence via Tavily, maintaining durable progress in a PostgreSQL ACID ledger so that a server crash mid-run is a non-event, and streaming every agent thought block back to the user dashboard in real time over Socket.io.
+
+**Live demonstration profile:** An **Intelligent Backend Email-Sorting System** — AutoPilot receives one macro instruction, autonomously researches real-world email classification design patterns on the live web, architects a concurrent processing topology, and generates validated, production-ready Node.js code that routes every incoming message into one of four explicit buckets: `Spam`, `Real/Personal`, `Important`, and `Not Important`.
+
+🔗 **Repository:** [https://github.com/Dhanyachilakalapudi/Orian](https://github.com/Dhanyachilakalapudi/Orian)
+
+---
+
+## 🎯 Core Features & Capabilities
+
+AutoPilot directly satisfies every pillar of the **Research → Action** hackathon track:
+
+### 🤝 Multi-Agent Collaboration
+Multiple specialised sub-agents run within a single coordinated pipeline. A **Decomposition Agent** breaks the raw goal into discrete, executable sub-tasks; a **Research Agent** grounds each sub-task in live evidence fetched from the web; an **Architecture Agent** drafts the system topology; and a **Code Generation Agent** synthesises and validates the final output. Agents communicate state through the shared PostgreSQL ledger rather than fragile in-memory hand-offs, making the pipeline composable and auditable.
+
+### 🧠 Deep Reasoning via Groq / Llama 3.1
+Every reasoning step runs through the **Groq inference API** using `llama-3.1-8b-instant`, selected for its sub-100 ms time-to-first-token at full context depth. Agents receive structured prompts that encode current state, prior agent outputs, and live web context, enabling multi-hop reasoning across steps that a single prompt call simply cannot perform.
+
+### 🌐 Live Web Tool Calling via Tavily
+The Research Agent calls the **Tavily Search API** mid-pipeline to retrieve current, factual design patterns — not hallucinated recall. Every architectural decision the system makes is grounded in retrieved evidence that is injected as cited context into the subsequent reasoning step.
+
+### ⏳ Asynchronous Orchestration with BullMQ + Upstash Redis
+User requests are immediately acknowledged and enqueued into a **BullMQ job queue** backed by an **Upstash Cloud Redis cluster** (`rediss://` TLS protocol). Long-running agent threads execute entirely inside background workers, fully decoupled from the HTTP request-response lifecycle. The UI never blocks; users see live streaming output while the pipeline runs asynchronously in the background.
+
+### 🔒 Long-Running Crash Resilience via PostgreSQL ACID Ledger
+Pipeline state — which sub-tasks are pending, running, completed, or failed — is written transactionally to a **PostgreSQL database** after every state transition. If the server process dies mid-run, the BullMQ worker re-acquires the job from Upstash Redis on restart and re-syncs from the PostgreSQL ledger to resume exactly where execution stopped. No state is lost, no jobs are duplicated, no files lock.
+
+### 📡 Real-Time Observability via Socket.io
+A **Socket.io gateway** streams structured agent thought blocks, tool call results, sub-task status changes, and final output tokens directly to the React dashboard as they are produced — giving users live transparency into the system's autonomous decision-making process without any polling.
+
+### ⚡ Autonomy Without Human Steering
+The entire pipeline from goal ingestion to final validated code output executes without a human approving or redirecting any intermediate step. AutoPilot decides its own decomposition strategy, selects what to search, evaluates retrieved evidence, and iterates on generated code — all autonomously.
+
+---
+
+## 🏗️ Technical System Architecture
+
+```
+╔══════════════════════════════════════════════════════════════════════╗
+║                     USER BROWSER / DASHBOARD                        ║
+║               React UI  ·  http://localhost:3001                    ║
+║                                                                      ║
+║   [Goal Input Form]   [Live Agent Thought Stream]   [Output Panel]  ║
+╚══════════════════╦═══════════════════════════════════╦══════════════╝
+                   ║  POST /api/tasks (HTTP)            ║  ws://localhost:3000
+                   ║  Submit goal objective             ║  Receive live events
+                   ▼                                   ▲
+╔══════════════════════════════════════════════════════╝
+║               EXPRESS API SERVER  ·  http://localhost:3000
+║
+║   ┌──────────────────────────────────────────────┐
+║   │  REST Endpoints                              │
+║   │  POST /api/tasks          → Enqueue job      │
+║   │  GET  /health             → Liveness probe   │
+║   │  GET  /api/stats/queue    → BullMQ metrics   │
+║   │  GET  /api/stats/worker   → Worker metrics   │
+║   └───────────────────┬──────────────────────────┘
+║                       │
+║   ┌───────────────────▼──────────────────────────┐
+║   │  Socket.io Gateway (ws://localhost:3000)     │
+║   │  Broadcasts thought blocks → React UI        │
+║   └───────────────────┬──────────────────────────┘
+║                       │
+╚═══════════════════════╪══════════════════════════════════════════════╝
+                        │  Enqueue Job
+          ┌─────────────▼──────────────┐
+          │  UPSTASH CLOUD REDIS       │
+          │  Protocol: rediss://       │
+          │  Queue Namespace:          │
+          │  orian-autopilot-tasks     │
+          │  Engine: BullMQ            │
+          └─────────────┬──────────────┘
+                        │  Dequeue Job (async worker)
+          ┌─────────────▼──────────────┐
+          │  BACKGROUND TASK WORKER    │◄──── Reads/writes state on every
+          │                            │      sub-task transition
+          │  1. Goal Decomposition     │
+          │  2. Research (Tavily)      │◄──────────────────────┐
+          │  3. Architecture Design    │                       │
+          │  4. Code Generation        │           ┌───────────▼──────────┐
+          │  5. Validation             │           │  TAVILY SEARCH API   │
+          └──────┬──────────┬──────────┘           │  Live web grounding  │
+                 │          │                      └──────────────────────┘
+                 │          │ LLM Calls
+                 │          ▼
+                 │   ┌──────────────────────────┐
+                 │   │  GROQ INFERENCE API      │
+                 │   │  Model:                  │
+                 │   │  llama-3.1-8b-instant    │
+                 │   │  Sub-100ms TTFT          │
+                 │   └──────────────────────────┘
+                 │
+                 ▼
+    ╔════════════════════════════╗
+    ║  POSTGRESQL STATE LEDGER  ║
+    ║  ACID-compliant           ║
+    ║  Tracks: task status,     ║
+    ║  sub-task results,        ║
+    ║  agent outputs,           ║
+    ║  timestamps, retries      ║
+    ╚════════════════════════════╝
+```
+
+**Data Flow Summary:**
+
+1. The React UI submits a goal to the Express API over HTTP.
+2. The API writes a new task record to PostgreSQL (status: `QUEUED`) and enqueues a BullMQ job into Upstash Redis.
+3. The background worker picks up the job, updates PostgreSQL to `RUNNING`, and begins the agent pipeline.
+4. Each agent sub-step calls Groq for LLM reasoning and Tavily for live web evidence. State is committed to PostgreSQL after every transition.
+5. The Socket.io gateway emits structured event payloads to the connected React client after each agent action.
+6. On completion, the final output and all intermediate states are persisted in PostgreSQL. The React UI renders the validated code in the output panel.
+
+---
+
+## ⚙️ Fast Quickstart Guide
+
+### Prerequisites
+
+Ensure the following are installed and available on your system `PATH` before starting:
+
+| Dependency | Version | Purpose |
+|---|---|---|
+| Node.js | ≥ 18.x | Backend runtime and React build toolchain |
+| npm | ≥ 9.x | Package manager |
+| PostgreSQL | ≥ 14.x | Local or remote ACID state ledger |
+| Git | Any recent | Repository cloning |
+
+You will also need active accounts and API keys for:
+- **Upstash** — Create a free Redis database at [upstash.com](https://upstash.com). Copy the `rediss://` connection string.
+- **Groq** — Obtain a free API key at [console.groq.com](https://console.groq.com).
+- **Tavily** — Obtain a free API key at [tavily.com](https://tavily.com).
+
+---
+
+### Step 1 — Clone the Repository
+
+```powershell
+git clone https://github.com/Dhanyachilakalapudi/Orian.git
+cd Orian
+```
+
+---
+
+### Step 2 — Configure Environment Variables
+
+Navigate into the backend directory and create the environment file:
+
+```powershell
+cd backend
+copy .env.example .env
+```
+
+Open `.env` in any editor and populate every value:
+
+```env
+# ── Server ──────────────────────────────────────────────────────────────
+PORT=3000
+
+# ── PostgreSQL (ACID State Ledger) ───────────────────────────────────────
+# Local example:
+DATABASE_URL=postgresql://postgres:yourpassword@localhost:5432/autopilot
+# Remote/cloud example:
+# DATABASE_URL=postgresql://user:password@your-db-host:5432/autopilot
+
+# ── Upstash Redis (BullMQ Async Queue) ───────────────────────────────────
+# Use the full rediss:// URL from your Upstash dashboard
+REDIS_URL=rediss://default:your_upstash_token@your-region.upstash.io:6380
+
+# ── AI Reasoning Engine ───────────────────────────────────────────────────
+GROQ_API_KEY=gsk_your_groq_api_key_here
+
+# ── Live Web Tooling ──────────────────────────────────────────────────────
+TAVILY_API_KEY=tvly-your_tavily_api_key_here
+```
+
+> **Security note:** `.env` is listed in `.gitignore`. Never commit API keys or database credentials to version control.
+
+---
+
+### Step 3 — Boot the Backend
+
+From the `backend/` directory, run the following commands in sequence:
+
+```powershell
+# Install all backend dependencies
+npm install
+
+# Run database migrations to initialise the PostgreSQL schema
+npm run db:migrate
+
+# Start the Express API server and BullMQ background worker
+npm run dev
+```
+
+Successful startup output will look similar to:
+
+```
+[AutoPilot] Express API listening on http://localhost:3000
+[AutoPilot] Socket.io gateway active on ws://localhost:3000
+[AutoPilot] BullMQ worker connected — queue: orian-autopilot-tasks
+[AutoPilot] PostgreSQL ledger connection verified
+```
+
+---
+
+### Step 4 — Boot the Frontend
+
+Open a **second PowerShell terminal**, navigate to the frontend directory, and start the React development server.
+
+> **⚠️ Windows PowerShell Port Override** — React's `react-scripts start` reads the `PORT` environment variable to determine which port to bind. The standard cross-platform syntax (`PORT=3001 npx react-scripts start`) does **not** work in PowerShell because it uses Unix shell variable assignment syntax. On Windows PowerShell, you must use the `$env:` assignment syntax in the same statement, as shown below.
+
+```powershell
+cd ..\frontend
+
+# Install all frontend dependencies
+npm install
+
+# Start React dev server on port 3001 using the Windows PowerShell syntax
+$env:PORT=3001; npx react-scripts start
+```
+
+The React development server will open automatically at **[http://localhost:3001](http://localhost:3001)** in your default browser.
+
+> **Why port 3001?** The backend Express API occupies port 3000. Running the frontend on 3001 prevents a port conflict and matches the CORS origin allowlist configured in the backend.
+
+---
+
+### Step 5 — Verify the Stack is Healthy
+
+With both servers running, open a third terminal and run the following health check:
+
+```powershell
+# Confirm API server, PostgreSQL, and Redis connections are all live
+Invoke-RestMethod -Uri http://localhost:3000/health
+
+# Inspect current BullMQ queue depth and job states
+Invoke-RestMethod -Uri http://localhost:3000/api/stats/queue
+
+# Inspect background worker thread status
+Invoke-RestMethod -Uri http://localhost:3000/api/stats/worker
+```
+
+All three endpoints returning `200 OK` with populated JSON confirms the full stack is operational and ready to accept goals.
+
+---
+
+## 🛡️ Crash Resilience & Compliance
+
+AutoPilot is designed around the assumption that **processes die**. Long-running AI pipelines that store intermediate state in memory — or worse, in filesystem temp files — are operationally fragile. A single `SIGKILL`, OOM event, or deployment restart destroys all in-flight progress and forces the user to restart from scratch.
+
+AutoPilot eliminates this failure class through a **two-layer durable state architecture**:
+
+### Layer 1 — Upstash Cloud Redis (Job Persistence)
+
+BullMQ persists every job record — including its payload, retry count, delay settings, and completion state — in the Upstash Redis cluster over a `rediss://` TLS-encrypted connection. Jobs in `active`, `waiting`, `delayed`, or `failed` states survive full server restarts. When the Express process comes back online, the BullMQ worker reconnects to Upstash and immediately re-acquires any jobs that were in flight at the time of the crash. Because Upstash is a **cloud-managed Redis cluster**, it operates independently of the application process lifecycle — there is no local Redis daemon to also restart.
+
+### Layer 2 — PostgreSQL ACID Ledger (Sub-Task State)
+
+Every sub-task within the agent pipeline is represented as a row in the PostgreSQL `task_steps` table. After each sub-task completes — whether that sub-task is a goal decomposition, a Tavily search call, an LLM reasoning step, or a code generation pass — the worker commits the result and status to PostgreSQL in a single ACID transaction before proceeding.
+
+If the process crashes between sub-tasks, the PostgreSQL ledger reflects exactly how far the pipeline progressed. On restart, the worker reads the ledger, identifies the last committed step, and **resumes from the next uncompleted sub-task** rather than replaying the entire pipeline from the beginning.
+
+### Concurrent Write Safety
+
+Because all state transitions go through PostgreSQL transactions rather than filesystem writes, there are **no file-locking race conditions** when multiple BullMQ worker threads process jobs concurrently. PostgreSQL's row-level locking and MVCC (Multi-Version Concurrency Control) guarantee that concurrent writes to the state ledger are serialised correctly without deadlocks or data corruption.
+
+### Failure Recovery Matrix
+
+| Failure Scenario | Recovery Behaviour |
+|---|---|
+| Express process killed mid-pipeline | BullMQ re-acquires job from Upstash Redis on restart; worker resumes from last PostgreSQL-committed sub-task |
+| PostgreSQL transient connection error | Worker retries the current sub-task with BullMQ's configurable backoff policy |
+| Groq API timeout | Sub-task is marked `RETRY` in PostgreSQL; worker re-attempts with exponential backoff |
+| Tavily rate limit response | Research sub-task deferred; job re-enqueued after delay without losing prior completed steps |
+| Full server host reboot | Upstash Redis and PostgreSQL retain state independently; pipeline resumes on next process start |
+
+---
+
+## 📊 Observability Endpoints & Metrics
+
+AutoPilot exposes three dedicated diagnostic endpoints. These require no authentication and are intended for real-time operational monitoring by judges, developers, and CI health checks.
+
+---
+
+### `GET http://localhost:3000/health`
+
+**Purpose:** Top-level liveness and readiness probe. Verifies that the Express server is accepting connections, the PostgreSQL ledger is reachable, and the Upstash Redis cluster connection is live.
+
+**Example response:**
+
+```json
+{
+  "status": "ok",
+  "timestamp": "2025-01-15T10:32:44.812Z",
+  "uptime_seconds": 3847,
+  "services": {
+    "postgres": {
+      "status": "connected",
+      "latency_ms": 4
+    },
+    "redis": {
+      "status": "connected",
+      "provider": "upstash",
+      "protocol": "rediss"
+    },
+    "groq": {
+      "status": "configured"
+    },
+    "tavily": {
+      "status": "configured"
+    }
+  }
+}
+```
+
+---
+
+### `GET http://localhost:3000/api/stats/queue`
+
+**Purpose:** Returns live BullMQ queue depth and job state distribution across the `orian-autopilot-tasks` namespace. Use this to monitor pipeline throughput, identify backed-up jobs, and verify that completed jobs are being drained correctly.
+
+**Example response:**
+
+```json
+{
+  "queue": "orian-autopilot-tasks",
+  "counts": {
+    "waiting": 0,
+    "active": 1,
+    "completed": 14,
+    "failed": 0,
+    "delayed": 0,
+    "paused": 0
+  },
+  "throughput": {
+    "jobs_completed_last_60s": 3,
+    "avg_job_duration_ms": 8420
+  }
+}
+```
+
+---
+
+### `GET http://localhost:3000/api/stats/worker`
+
+**Purpose:** Returns background worker thread health, including the number of active worker concurrency slots, the ID and current status of any in-flight job, and the cumulative count of jobs processed since the worker started.
+
+**Example response:**
+
+```json
+{
+  "worker": {
+    "status": "running",
+    "concurrency": 2,
+    "active_jobs": [
+      {
+        "job_id": "a3f9b2c1-7d4e-4a81-b930-f6e812d45c77",
+        "goal_preview": "Build an intelligent email sorting system...",
+        "current_step": "research",
+        "elapsed_ms": 3210,
+        "sub_tasks_completed": 1,
+        "sub_tasks_total": 5
+      }
+    ],
+    "jobs_processed_total": 15,
+    "jobs_failed_total": 0
+  }
+}
+```
+
+---
+
+## 🗂️ Repository Structure
+
+```
+Orian/
+├── backend/
+│   ├── src/
+│   │   ├── agents/          # Decomposition, Research, Architecture, CodeGen agents
+│   │   ├── queue/           # BullMQ worker and job processor
+│   │   ├── db/              # PostgreSQL client, migrations, schema
+│   │   ├── routes/          # Express REST endpoints
+│   │   ├── socket/          # Socket.io event emitters
+│   │   └── index.js         # Server entrypoint
+│   ├── .env.example         # Environment variable template
+│   └── package.json
+├── frontend/
+│   ├── src/
+│   │   ├── components/      # GoalInput, AgentStream, OutputPanel
+│   │   ├── hooks/           # useSocket, useTaskState
+│   │   └── App.jsx          # Root component
+│   └── package.json
+└── README.md
+```
+
+---
+
+## 🧰 Full Technology Stack
+
+| Layer | Technology | Role |
+|---|---|---|
+| **Frontend** | React 18 | Interactive dashboard UI |
+| **Backend** | Node.js / Express | REST API and Socket.io server |
+| **State Ledger** | PostgreSQL | ACID-compliant sub-task persistence |
+| **Async Queue** | Upstash Cloud Redis + BullMQ | Durable job queuing and worker dispatch |
+| **LLM Reasoning** | Groq — `llama-3.1-8b-instant` | Ultra-low-latency multi-step inference |
+| **Live Web Search** | Tavily Search API | Real-time evidence grounding |
+| **Streaming** | Socket.io | Bidirectional real-time event delivery |
+| **Queue Protocol** | `rediss://` (TLS) | Encrypted Upstash Redis connection |
+
+---
+
+## 📄 License
+
+This project is released under the [MIT License](LICENSE).
+
+---
+
+<div align="center">
+
+Built for the **Research → Action** Hackathon Track
+
+**AutoPilot** — *Because agents that stop at the prompt aren't agents.*
+
+</div>
